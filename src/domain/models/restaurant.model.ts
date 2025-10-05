@@ -15,6 +15,8 @@ export interface RestaurantInterface {
     complemento?: string;
     profileImage?: string;
     averageRating?: number;
+    minPrice?: number;
+    dishCount?: number;
     dishes?: DishEntityInterface[];
     companyOrders?: CompanyOrderEntityInterface[];
     restaurantRatings?: RestaurantRatingInterface[];

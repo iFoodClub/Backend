@@ -140,7 +140,7 @@ export class UserController {
 
 ### 3. Empresa (company)
 - **Campos obrigatórios:** \`name\`, \`email\`, \`password\`, \`profileImage\`, \`cnpj\`, \`company\`
-- O campo \`company\` deve conter: \`name\`, \`cep\`, \`number\`
+- O campo \`company\` deve conter: \`name\`, \`cep\`, \`number\` e opcionalmente \`restaurantId\` (pode ser \`null\`)
 
 **Exemplo:**
 \`\`\`json
@@ -153,7 +153,8 @@ export class UserController {
   "company": {
     "name": "Empresa ABC Ltda",
     "cep": "12345678",
-    "number": "100"
+    "number": "100",
+    "restaurantId": null
   }
 }
 \`\`\`

@@ -42,12 +42,14 @@ export class CreateCompanyUserDto {
         example: {
             name: "Empresa ABC Ltda",
             cep: "12345678",
-            number: "100"
+            number: "100",
+            restaurantId: null
         },
     })
     company: {
         name: string;
         cep: string;
         number: string;
+        restaurantId?: number | null;
     };
 } 
