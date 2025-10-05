@@ -4,7 +4,7 @@ import { EmployeeEntityInterface } from "./employee.repository.interface";
 export interface CompanyEntityInterface {
   id: number;
   userId: number;
-  restaurantId?: number;
+  restaurantId?: number | null;
   name: string;
   cnpj: string;
   cep: string;
