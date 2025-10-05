@@ -163,6 +163,7 @@ jobs:
           version_label: ${{ needs.version.outputs.new_version }}
           region: ${{ env.AWS_REGION }}
           deployment_package: deploy.zip
+          # testar linha abaixo
           wait_for_environment_recover: true
 
   # 5. Cria a Tag no Git
