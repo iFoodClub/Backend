@@ -10,6 +10,7 @@ on:
       - "main"
       - "development"
 
+# SOLUÇÃO PARA O PROBLEMA 2: Adiciona permissão de escrita
 permissions:
   contents: write
 
@@ -19,30 +20,22 @@ env:
   EB_APP_NAME: 'FoodClub-App'
 
 jobs:
-  # 1. Valida o código
   validate:
     name: Validate Code
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-
       - name: Setup Node.js ${{ env.NODE_VERSION }}
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
-
       - name: Install dependencies
         run: npm ci
-
       # - name: Run linter
-      #  run: npm run lint
+      #   run: npm run lint
 
-      # - name: Run tests
-      #   run: npm run test
-
-  # 2. Constrói a aplicação
   build:
     name: Build Application
     needs: validate
@@ -50,19 +43,15 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-
       - name: Setup Node.js ${{ env.NODE_VERSION }}
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
-
       - name: Install dependencies
         run: npm ci
-
       - name: Build production code
         run: npm run build
-
       - name: Archive production artifacts
         uses: actions/upload-artifact@v4
         with:
@@ -72,7 +61,6 @@ jobs:
             package.json
             package-lock.json
 
-  # 3. Gera a nova versão semântica
   version:
     name: Generate Semantic Version
     needs: build
@@ -83,45 +71,38 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0 # Necessário para analisar o histórico de commits
-
+          fetch-depth: 0
       - name: Generate version from commits
         id: version
         run: |
           git fetch --tags
-          latest_tag=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
+          latest_tag=$(git describe --tags --abbrev=0 2>/dev/null || echo "v0.0.0")
+          major=$(echo $latest_tag | cut -d. -f1 | tr -d 'v')
+          minor=$(echo $latest_tag | cut -d. -f2)
+          patch=$(echo $latest_tag | cut -d. -f3)
           
-          if [ -z "$latest_tag" ]; then
-            # Primeira versão - sem tags existentes
-            major=0
-            minor=0
-            patch=1
-            commits=$(git log --pretty=format:"%s")
-          else
-            major=$(echo $latest_tag | cut -d. -f1 | tr -d 'v')
-            minor=$(echo $latest_tag | cut -d. -f2)
-            patch=$(echo $latest_tag | cut -d. -f3)
-            
-            # Analisa commits desde a última tag
-            commits=$(git log $latest_tag..HEAD --pretty=format:"%s")
-          fi
+          commits=$(git log $latest_tag..HEAD --pretty=format:"%s")
           
+          # SOLUÇÃO PARA O PROBLEMA 1: Lógica de versionamento aprimorada
           if echo "$commits" | grep -qE "BREAKING|MAJOR"; then
-            major=$((major + 1))
-            minor=0
-            patch=0
+            major=$((major + 1)); minor=0; patch=0;
           elif echo "$commits" | grep -qE "feat|feature|MINOR"; then
-            minor=$((minor + 1))
-            patch=0
-          elif [ -n "$commits" ]; then
-            patch=$((patch + 1))
+            minor=$((minor + 1)); patch=0;
+          elif echo "$commits" | grep -qE "fix|chore|docs|style|refactor|perf|test"; then
+            patch=$((patch + 1));
           fi
           
-          new_version="v$major.$minor.$patch"
-          echo "New Version: $new_version"
+          base_version="v$major.$minor.$patch"
+          
+          if [ "${{ github.ref_name }}" == "development" ]; then
+            new_version="${base_version}-dev.${{ github.run_number }}"
+          else
+            new_version="${base_version}"
+          fi
+          
+          echo "Generated Version: $new_version"
           echo "version=${new_version}" >> $GITHUB_OUTPUT
 
-  # 4. Faz o deploy na AWS
   deploy:
     name: Deploy to AWS
     needs: [build, version]
@@ -129,30 +110,25 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Determine Environment Name
-        id: set_env
         run: |
           if [ "${{ github.ref }}" == "refs/heads/main" ]; then
             echo "EB_ENV_NAME=FoodClub-App-prod" >> $GITHUB_ENV
           elif [ "${{ github.ref }}" == "refs/heads/development" ]; then
             echo "EB_ENV_NAME=FoodClub-App-env" >> $GITHUB_ENV
           fi
-
       - name: Download build artifacts
         uses: actions/download-artifact@v4
         with:
           name: production-artifacts
           path: .
-
       - name: Generate deployment package
         run: zip -r deploy.zip .
-
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ env.AWS_REGION }}
-
       - name: Deploy to Elastic Beanstalk
         uses: einaregilsson/beanstalk-deploy@v21
         with:
@@ -163,10 +139,8 @@ jobs:
           version_label: ${{ needs.version.outputs.new_version }}
           region: ${{ env.AWS_REGION }}
           deployment_package: deploy.zip
-          # testar linha abaixo
           wait_for_environment_recover: true
 
-  # 5. Cria a Tag no Git
   tag:
     name: Create Git Tag
     needs: [deploy, version]
@@ -177,7 +151,6 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-
       - name: Create and push tag
         run: |
           git config user.name "GitHub Actions"
@@ -185,7 +158,6 @@ jobs:
           git tag -a "${{ needs.version.outputs.new_version }}" -m "Release ${{ needs.version.outputs.new_version }}"
           git push origin "${{ needs.version.outputs.new_version }}"
 
-  # 6. Notificação final
   notify:
     name: Send Notification
     needs: [validate, build, deploy, tag]
@@ -200,9 +172,9 @@ jobs:
           secure: true
           username: ${{ secrets.FOODCLUB_EMAIL }}
           password: ${{ secrets.FOODCLUB_EMAIL_PASSWORD }}
-          subject: '❌ Falha no Pipeline - FoodClub Backend'
-          to: ${{ secrets.NOTIFICATION_EMAIL }}
-          from: GitHub Actions <${{ secrets.FOODCLUB_EMAIL }}>
+          subject: '❌ Falha no Pipeline - FoodClub Server'
+          to: seu-email-de-notificacao@exemplo.com
+          from: GitHub Actions <${{ secrets.NOTIFICATION_EMAIL }}>
           html_body: |
             <h2>Falha no Pipeline do FoodClub Server</h2>
             <p>Ocorreu uma falha no pipeline de CI/CD para a branch <strong>${{ github.ref_name }}</strong>.</p>
