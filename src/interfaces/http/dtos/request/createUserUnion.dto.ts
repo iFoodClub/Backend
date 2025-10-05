@@ -67,7 +67,8 @@ export class CreateUserUnionDto {
                     company: {
                         name: "Empresa ABC Ltda",
                         cep: "12345678",
-                        number: "100"
+                        number: "100",
+                        restaurantId: null
                     }
                 }
             }

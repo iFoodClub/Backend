@@ -39,11 +39,13 @@ export class CreateCompanyDto {
     number: string;
 
     @ApiProperty({
-    description: 'ID do restaurante associado à empresa',
+    description: 'ID do restaurante associado à empresa (opcional)',
     type: Number,
     example: 1,
+    required: false,
+    nullable: true,
     })
-    restaurantId: number;
+    restaurantId?: number | null;
 
     @ApiProperty({
     description: 'Imagem de perfil da empresa',
