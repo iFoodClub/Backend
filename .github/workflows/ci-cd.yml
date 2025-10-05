@@ -1,204 +1,187 @@
-name: CI/CD Pipeline
+name: CI/CD - Deploy to AWS Elastic Beanstalk
 
 on:
   push:
-    branches: 
-      - "development"
+    branches:
       - "main"
+      - "development"
   pull_request:
     branches:
       - "main"
       - "development"
 
-permissions:
-  contents: write
-  packages: write
-  pull-requests: write
-  issues: write
-
 env:
-  DOCKER_HUB_REPOSITORY: ${{ secrets.DOCKER_HUB_USERNAME }}/foodclub-server
   NODE_VERSION: '18'
-  NOTIFICATION_EMAIL: ${{ secrets.NOTIFICATION_EMAIL }}
+  AWS_REGION: 'sa-east-1'
+  EB_APP_NAME: 'FoodClub-App'
 
 jobs:
-  build:
-    name: Build
+  # 1. Valida o código
+  validate:
+    name: Validate Code
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-          token: ${{ secrets.GITHUB_TOKEN }}
-      
-      - name: Setup Node.js
-        uses: actions/setup-node@v3
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js ${{ env.NODE_VERSION }}
+        uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
-      
+
       - name: Install dependencies
-        run: npm install --legacy-peer-deps
-      
-      - name: Build
+        run: npm ci
+
+      - name: Run linter
+        run: npm run lint
+
+      # TODO
+      # - name: Run tests
+      #   run: npm run test
+
+  # 2. Constrói a aplicação
+  build:
+    name: Build Application
+    needs: validate
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js ${{ env.NODE_VERSION }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build production code
         run: npm run build
 
+      - name: Archive production artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: production-artifacts
+          path: |
+            dist
+            package.json
+            package-lock.json
+
+  # 3. Gera a nova versão semântica
   version:
-    name: Version Management
+    name: Generate Semantic Version
     needs: build
     runs-on: ubuntu-latest
     outputs:
       new_version: ${{ steps.version.outputs.version }}
-      is_pr_merge: ${{ steps.version.outputs.is_pr_merge }}
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
         with:
-          fetch-depth: 0
-          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 0 # Necessário para analisar o histórico de commits
 
-      - name: Generate version
+      - name: Generate version from commits
         id: version
         run: |
           git fetch --tags
           latest_tag=$(git describe --tags --abbrev=0 2>/dev/null || echo "v0.0.0")
           
-          if [ "$latest_tag" = "v0.0.0" ] && [ ! -f .version-initialized ]; then
-            git tag v0.0.0
-            touch .version-initialized
-          fi
-          
           major=$(echo $latest_tag | cut -d. -f1 | tr -d 'v')
           minor=$(echo $latest_tag | cut -d. -f2)
           patch=$(echo $latest_tag | cut -d. -f3)
           
-          # Verifica se é um PR sendo mesclado
-          is_pr_merge=false
-          if [ "${{ github.event_name }}" == "pull_request" ] && [ "${{ github.event.pull_request.base.ref }}" == "main" -o "${{ github.event.pull_request.base.ref }}" == "development" ]; then
-            is_pr_merge=true
+          # Analisa commits desde a última tag
+          commits=$(git log $latest_tag..HEAD --pretty=format:"%s")
+          
+          if echo "$commits" | grep -qE "BREAKING|MAJOR"; then
+            major=$((major + 1))
+            minor=0
+            patch=0
+          elif echo "$commits" | grep -qE "feat|feature|MINOR"; then
+            minor=$((minor + 1))
+            patch=0
+          elif [ -n "$commits" ]; then
+            patch=$((patch + 1))
           fi
           
-          if [ "$is_pr_merge" == "true" ]; then
-            commits=$(git log $latest_tag..HEAD --pretty=format:"%s")
-          elif [ "${{ github.event_name }}" == "pull_request" ]; then
-            commits=$(git log $latest_tag..HEAD --pretty=format:"%s")
-          else
-            if git rev-list $latest_tag..HEAD --count > /dev/null 2>&1; then
-              commits=$(git log $latest_tag..HEAD --pretty=format:"%s")
-            else
-              commits=""
-            fi
-          fi
-          
-          if [ -n "$commits" ]; then
-            if echo "$commits" | grep -iE "BREAKING|MAJOR"; then
-              major=$((major + 1))
-              minor=0
-              patch=0
-            elif echo "$commits" | grep -iE "feat|feature|MINOR"; then
-              minor=$((minor + 1))
-              patch=0
-            else
-              patch=$((patch + 1))
-            fi
-          fi
-          
-          # Define o formato da versão baseado no contexto
-          if [ "$is_pr_merge" == "true" ]; then
-            if [[ "${{ github.event.pull_request.base.ref }}" == "development" ]]; then
-              new_version="v$major.$minor.$patch-dev"
-            else
-              new_version="v$major.$minor.$patch"
-            fi
-          elif [[ "${{ github.event_name }}" == "pull_request" ]]; then
-            new_version="v$major.$minor.$patch-pr${{ github.event.pull_request.number }}"
-          elif [[ "${{ github.ref }}" == "refs/heads/development" ]]; then
-            new_version="v$major.$minor.$patch-dev"
-          else
-            new_version="v$major.$minor.$patch"
-          fi
-          
-          echo "NEW_VERSION=${new_version}" >> $GITHUB_ENV
+          new_version="v$major.$minor.$patch"
+          echo "New Version: $new_version"
           echo "version=${new_version}" >> $GITHUB_OUTPUT
-          echo "is_pr_merge=${is_pr_merge}" >> $GITHUB_OUTPUT
 
-  docker:
-    name: Docker Build and Push
-    needs: version
+  # 4. Faz o deploy na AWS
+  deploy:
+    name: Deploy to AWS
+    needs: [build, version]
+    if: github.event_name == 'push'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      
-      - name: Login to Docker Hub
-        uses: docker/login-action@v3
-        with:
-          username: ${{ secrets.DOCKER_HUB_USERNAME }}
-          password: ${{ secrets.DOCKER_HUB_TOKEN }}
-          
-      - name: Set Docker tags
-        id: docker_tags
+      - name: Determine Environment Name
+        id: set_env
         run: |
-          echo "tags<<EOF" >> $GITHUB_OUTPUT
-          echo "${{ env.DOCKER_HUB_REPOSITORY }}:${{ needs.version.outputs.new_version }}" >> $GITHUB_OUTPUT
-          if [[ "${{ github.event_name }}" == "push" ]]; then
-            echo "${{ env.DOCKER_HUB_REPOSITORY }}:${{ github.ref == 'refs/heads/development' && 'development' || 'latest' }}" >> $GITHUB_OUTPUT
+          if [ "${{ github.ref }}" == "refs/heads/main" ]; then
+            echo "EB_ENV_NAME=FoodClub-App-prod" >> $GITHUB_ENV
+          elif [ "${{ github.ref }}" == "refs/heads/development" ]; then
+            echo "EB_ENV_NAME=FoodClub-App-env" >> $GITHUB_ENV
           fi
-          echo "EOF" >> $GITHUB_OUTPUT
-          
-      - name: Build and push Docker images
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          push: true
-          tags: ${{ steps.docker_tags.outputs.tags }}
 
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: production-artifacts
+          path: .
+
+      - name: Generate deployment package
+        run: zip -r deploy.zip .
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Deploy to Elastic Beanstalk
+        uses: einaregilsson/beanstalk-deploy@v21
+        with:
+          aws_access_key: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws_secret_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          application_name: ${{ env.EB_APP_NAME }}
+          environment_name: ${{ env.EB_ENV_NAME }}
+          version_label: ${{ needs.version.outputs.new_version }}
+          region: ${{ env.AWS_REGION }}
+          deployment_package: deploy.zip
+          wait_for_environment_recover: true
+
+  # 5. Cria a Tag no Git
   tag:
     name: Create Git Tag
-    needs: [version, docker]
-    if: success() && (github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/development') || github.event_name == 'pull_request')
+    needs: [deploy, version]
+    if: github.event_name == 'push'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          token: ${{ secrets.GITHUB_TOKEN }}
-          
+
       - name: Create and push tag
         run: |
-          git config --global user.name 'GitHub Actions'
-          git config --global user.email 'github-actions[bot]@users.noreply.github.com'
-          
-          # Verifica se a tag já existe
-          if git rev-parse "${{ needs.version.outputs.new_version }}" >/dev/null 2>&1; then
-            echo "Tag ${{ needs.version.outputs.new_version }} já existe. Incrementando versão..."
-            # Incrementa o patch
-            current_version=$(echo ${{ needs.version.outputs.new_version }} | tr -d 'v')
-            major=$(echo $current_version | cut -d. -f1)
-            minor=$(echo $current_version | cut -d. -f2)
-            patch=$(echo $current_version | cut -d. -f3)
-            new_patch=$((patch + 1))
-            new_version="v$major.$minor.$new_patch"
-          else
-            new_version="${{ needs.version.outputs.new_version }}"
-          fi
-          
-          if [[ "${{ needs.version.outputs.is_pr_merge }}" == "true" ]]; then
-            git tag -a $new_version -m "Release $new_version (via PR #${{ github.event.pull_request.number }})"
-          elif [[ "${{ github.event_name }}" == "pull_request" ]]; then
-            git tag -a $new_version -m "PR #${{ github.event.pull_request.number }} - ${{ github.event.pull_request.title }}"
-          else
-            git tag -a $new_version -m "Release $new_version"
-          fi
-          
-          git push origin $new_version
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
+          git tag -a "${{ needs.version.outputs.new_version }}" -m "Release ${{ needs.version.outputs.new_version }}"
+          git push origin "${{ needs.version.outputs.new_version }}"
 
+  # 6. Notificação final
   notify:
-    name: Send Notifications
-    needs: [build, version, docker, tag]
-    if: always()
+    name: Send Notification
+    needs: [validate, build, deploy, tag]
+    if: failure()
     runs-on: ubuntu-latest
     steps:
       - name: Send email on failure
-        if: failure() && env.NOTIFICATION_EMAIL != ''
         uses: dawidd6/action-send-mail@v3
         with:
           server_address: smtp.gmail.com
@@ -206,18 +189,10 @@ jobs:
           secure: true
           username: ${{ secrets.FOODCLUB_EMAIL }}
           password: ${{ secrets.FOODCLUB_EMAIL_PASSWORD }}
-          subject: '❌ Falha no Pipeline - FoodClub Server'
-          to: ${{ env.NOTIFICATION_EMAIL }}
-          from: ${{ secrets.FOODCLUB_EMAIL }}
+          subject: '❌ Falha no Pipeline - FoodClub Backend'
+          to: ${{ secrets.NOTIFICATION_EMAIL }}
+          from: GitHub Actions <${{ secrets.FOODCLUB_EMAIL }}>
           html_body: |
             <h2>Falha no Pipeline do FoodClub Server</h2>
-            <p>Ocorreu uma falha no pipeline de CI/CD.</p>
-            <h3>Detalhes:</h3>
-            <ul>
-              <li><strong>Branch:</strong> ${{ github.ref }}</li>
-              <li><strong>Commit:</strong> ${{ github.sha }}</li>
-              <li><strong>Autor:</strong> ${{ github.actor }}</li>
-              <li><strong>Job com falha:</strong> ${{ needs.*.result == 'failure' && 'Job com falha' || 'N/A' }}</li>
-            </ul>
-            <p>
-              Para mais detalhes, <a href="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}">clique aqui</a>. 
+            <p>Ocorreu uma falha no pipeline de CI/CD para a branch <strong>${{ github.ref_name }}</strong>.</p>
+            <p>Para ver os detalhes, <a href="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}">clique aqui</a>.</p>
