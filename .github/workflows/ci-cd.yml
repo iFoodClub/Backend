@@ -36,7 +36,6 @@ jobs:
       - name: Run linter
         run: npm run lint
 
-      # TODO
       # - name: Run tests
       #   run: npm run test
 
