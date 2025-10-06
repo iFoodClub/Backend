@@ -1,0 +1,13 @@
+# Database config files
+src/infrastructure/database/config.js
+src/infrastructure/database/migrations/
+src/infrastructure/database/seeders/
+
+# Build output
+dist/
+node_modules/
+
+# Environment files
+.env
+.env.local
+.env.*.local

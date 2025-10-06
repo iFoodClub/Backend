@@ -12,7 +12,6 @@ module.exports = {
     dialectOptions: {
       ssl: {
         require: true,
-        rejectUnauthorized: false // Necessário para o Render
       }
     }
   },
@@ -27,7 +26,6 @@ module.exports = {
     dialectOptions: {
       ssl: {
         require: true,
-        rejectUnauthorized: false // Necessário para o Render
       }
     }
   }
