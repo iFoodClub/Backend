@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { ConfigModule } from '@nestjs/config';
 import { DishModule } from './interfaces/http/dish.module';
 import { DatabaseModule } from './infrastructure/database/database.module';
 import { DishController } from './interfaces/http/controllers/dish.controller';
@@ -20,7 +21,7 @@ import { EmployeeWeeklyOrdersModule } from './interfaces/http/employee-weekly-or
 import { HealthCheckModule} from './interfaces/http/health-check.module';
 
 @Module({
-  imports: [CompanyModule, DishModule, DatabaseModule, EmployeeModule, DishRatingModule,
+  imports: [ConfigModule.forRoot({ isGlobal: true }), CompanyModule, DishModule, DatabaseModule, EmployeeModule, DishRatingModule,
             RestaurantModule, UserModule, AuthModule, EmployeeWeeklyOrdersModule,
             RestaurantRatingModule, HealthCheckModule],
   controllers: [CompanyController, DishController, EmployeeController, DishRatingControlller,
