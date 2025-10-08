@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, HttpCode, Param, Post, Put, Res, NotFoundException } from '@nestjs/common';
+import { Body, Controller, Delete, Get, HttpCode, Param, Post, Put, Res, NotFoundException, UseGuards, UsePipes } from '@nestjs/common';
 
 import { GetRestaurantByIdService } from '../../../application/use-cases/get-restaurant-byid.use-cases'
 import { CreateRestaurantService } from '../../../application/use-cases/create-restaurant.use-cases';

@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Param, Post, Put, Res, UseGuards } from "@nestjs/common";
+import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Param, Post, Put, Res, UseGuards, UsePipes } from "@nestjs/common";
 import { CreateUserService } from "../../../application/use-cases/create-user.use-cases";
 import { DeleteUserService } from "../../../application/use-cases/delete-user.use-cases";
 import { GetUserByIdService } from "../../../application/use-cases/get-user-byid.use-cases";
@@ -22,9 +22,14 @@ import { GetUserByEmailService } from "../../../application/use-cases/get-byemai
 import { UserLoginEntityInterface } from "src/domain/repositories/user-login.repository.interface";
 import { UpdateUserImageDto } from "../dtos/request/updateUserImage.dto";
 import { UpdateUserPasswordDto } from "../dtos/request/updateUserPassword.dto";
+import { SqlInjectionGuard } from "../../../infrastructure/security/sql-injection.guard";
+import { InputValidationPipe } from "../../../infrastructure/security/input-validation.pipe";
+import { ValidateId, SanitizeInput } from "../../../infrastructure/security/validation.decorators";
 
 @ApiTags('User API')
 @Controller('user')
+@UseGuards(SqlInjectionGuard)
+@UsePipes(InputValidationPipe)
 export class UserController {
     constructor(
         private readonly createUserService: CreateUserService,

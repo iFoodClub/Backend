@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, HttpCode, Param, Post, Put, Res } from '@nestjs/common';
+import { Body, Controller, Delete, Get, HttpCode, Param, Post, Put, Res, UseGuards, UsePipes } from '@nestjs/common';
 import { GetCompanyByIdService } from '../../../application/use-cases/get-company-byid.use-cases'
 import { CreateCompanyService } from '../../../application/use-cases/create-company.use-cases';
 import { UpdateCompanyService } from '../../../application/use-cases/update-company.use-cases';
@@ -21,9 +21,14 @@ import { ListWeeklyOrdersByCompanyService } from 'src/application/use-cases/list
 import { CreateOrdersFromWeeklyOrdersUseCase } from 'src/application/use-cases/create-orders-from-weekly-orders.use-case';
 import { CompanyWeeklyOrdersResponse } from 'src/interfaces/http/dtos/response/companyWeeklyOrders.dto';
 import { CreateOrdersFromWeeklyResponse } from 'src/interfaces/http/dtos/response/createOrdersFromWeeklyResponse.dto';
+import { SqlInjectionGuard } from '../../../infrastructure/security/sql-injection.guard';
+import { InputValidationPipe } from '../../../infrastructure/security/input-validation.pipe';
+import { ValidateId, SanitizeInput } from '../../../infrastructure/security/validation.decorators';
 
 @ApiTags('Company API')
 @Controller('company')
+@UseGuards(SqlInjectionGuard)
+@UsePipes(InputValidationPipe)
 export class CompanyController {
   constructor(
     private readonly listCompaniesService: ListCompaniesService,

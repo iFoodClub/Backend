@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, HttpCode, Param, Post, Put, Res } from '@nestjs/common';
+import { Body, Controller, Delete, Get, HttpCode, Param, Post, Put, Res, UseGuards, UsePipes } from '@nestjs/common';
 
 import { GetEmployeeByIdService } from '../../../application/use-cases/get-employee-byid.use-cases';
 import { EmployeeInterface } from 'src/domain/models/employee.model';
@@ -13,9 +13,14 @@ import { ListEmployeeDtoResponse } from 'src/interfaces/http/dtos/response/listE
 import { CreateEmployeeDto } from 'src/interfaces/http/dtos/request/createEmployee.dto';
 import { Http400 } from 'src/interfaces/http/dtos/response/http400';
 import { Http404 } from 'src/interfaces/http/dtos/response/http404';
+import { SqlInjectionGuard } from '../../../infrastructure/security/sql-injection.guard';
+import { InputValidationPipe } from '../../../infrastructure/security/input-validation.pipe';
+import { ValidateId, SanitizeInput } from '../../../infrastructure/security/validation.decorators';
 
 @ApiTags('Employee API')
 @Controller('employee')
+@UseGuards(SqlInjectionGuard)
+@UsePipes(InputValidationPipe)
 export class EmployeeController {
   constructor(
     private readonly listEmployeesService: ListEmployeesService,
