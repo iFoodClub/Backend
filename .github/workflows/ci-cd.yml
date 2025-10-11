@@ -158,26 +158,101 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - name: Generate Changelog
+          token: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Generate Enhanced Changelog
         id: generate_changelog
         run: |
-          log_content=$(git log --pretty=format:"* %s" $(git describe --tags --abbrev=0)..HEAD)
+          # Define a data da release
+          release_date=$(date '+%d/%m/%Y às %H:%M')
+          
+          # Pega o último tag se existir
+          latest_tag=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
+          
+          if [ -z "$latest_tag" ]; then
+            # Se não há tags, pega todos os commits
+            commits=$(git log --pretty=format:"* **%s** - %an (%h)" --since="1 week ago")
+          else
+            # Se há tags, pega commits desde o último tag
+            commits=$(git log --pretty=format:"* **%s** - %an (%h)" $latest_tag..HEAD)
+          fi
+          
+          # Categoriza os commits
+          features=$(echo "$commits" | grep -E "feat|feature" || echo "")
+          fixes=$(echo "$commits" | grep -E "fix|bugfix" || echo "")
+          improvements=$(echo "$commits" | grep -E "chore|refactor|perf|style" || echo "")
+          docs=$(echo "$commits" | grep -E "docs|doc" || echo "")
+          
+          # Cria o changelog estruturado
           {
             echo "changelog<<EOF"
-            echo "## O que mudou nesta versão"
+            echo "# FoodClub Backend - Versão ${{ needs.version.outputs.new_version }}"
             echo ""
-            echo "$log_content"
+            echo "**📅 Data de Release:** $release_date"
+            echo "**🌟 Branch:** ${{ github.ref_name }}"
+            echo "**💻 Commit:** [\`${{ github.sha }}\`](https://github.com/${{ github.repository }}/commit/${{ github.sha }})"
+            echo ""
+            
+            if [ ! -z "$features" ]; then
+              echo "## ✨ Novas Funcionalidades"
+              echo "$features"
+              echo ""
+            fi
+            
+            if [ ! -z "$fixes" ]; then
+              echo "## 🐛 Correções de Bugs"
+              echo "$fixes"
+              echo ""
+            fi
+            
+            if [ ! -z "$improvements" ]; then
+              echo "## 🔧 Melhorias e Otimizações"
+              echo "$improvements"
+              echo ""
+            fi
+            
+            if [ ! -z "$docs" ]; then
+              echo "## 📚 Documentação"
+              echo "$docs"
+              echo ""
+            fi
+            
+            echo "## 🔗 Links Úteis"
+            echo "- [📋 Changelog Completo](https://github.com/${{ github.repository }}/compare/$latest_tag...${{ needs.version.outputs.new_version }})"
+            echo "- [🏗️ Pipeline de Deploy](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})"
+            echo ""
+            echo "---"
+            echo "*Release gerada automaticamente pelo GitHub Actions*"
             echo "EOF"
           } >> $GITHUB_OUTPUT
+      
+      - name: Create Git Tag
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          
+          # Cria a tag localmente
+          git tag -a "${{ needs.version.outputs.new_version }}" -m "🏷️ Release ${{ needs.version.outputs.new_version }}
+
+          📅 Data: $(date '+%d/%m/%Y às %H:%M')
+          🌟 Branch: ${{ github.ref_name }}
+          💻 Commit: ${{ github.sha }}
+          🚀 Deploy: Automático via GitHub Actions"
+          
+          # Push da tag para o repositório
+          git push origin "${{ needs.version.outputs.new_version }}"
+      
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v1
         with:
           tag_name: ${{ needs.version.outputs.new_version }}
-          name: Release ${{ needs.version.outputs.new_version }}
+          name: "FoodClub Backend v${{ needs.version.outputs.new_version }}"
           body: ${{ steps.generate_changelog.outputs.changelog }}
           prerelease: ${{ github.ref == 'refs/heads/development' }}
-    env:
-      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          generate_release_notes: false
+          make_latest: ${{ github.ref == 'refs/heads/main' }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
   
   notify_failure:
     name: Send Notification
