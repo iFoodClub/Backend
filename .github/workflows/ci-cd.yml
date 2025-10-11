@@ -103,7 +103,7 @@ jobs:
           base_version="v$major.$minor.$patch"
           
           if [ "${{ github.ref_name }}" == "development" ]; then
-            new_version="${base_version}-dev.${{ github.run_number }}"
+            new_version="${base_version}.dev.${{ github.run_number }}"
           else
             new_version="${base_version}"
           fi
@@ -148,8 +148,8 @@ jobs:
           region: ${{ env.AWS_REGION }}
           deployment_package: deploy.zip
 
-  tag:
-    name: Create Git Tag
+  create_release:
+    name: Create GitHub Release
     needs: [deploy, version]
     if: github.event_name == 'push'
     runs-on: ubuntu-latest
@@ -158,16 +158,30 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - name: Create and push tag
+      - name: Generate Changelog
+        id: generate_changelog
         run: |
-          git config user.name "GitHub Actions"
-          git config user.email "actions@github.com"
-          git tag -a "${{ needs.version.outputs.new_version }}" -m "Release ${{ needs.version.outputs.new_version }}"
-          git push origin "${{ needs.version.outputs.new_version }}"
-
-  notify:
+          log_content=$(git log --pretty=format:"* %s" $(git describe --tags --abbrev=0)..HEAD)
+          {
+            echo "changelog<<EOF"
+            echo "## O que mudou nesta versão"
+            echo ""
+            echo "$log_content"
+            echo "EOF"
+          } >> $GITHUB_OUTPUT
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ needs.version.outputs.new_version }}
+          name: Release ${{ needs.version.outputs.new_version }}
+          body: ${{ steps.generate_changelog.outputs.changelog }}
+          prerelease: ${{ github.ref == 'refs/heads/development' }}
+    env:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  
+  notify_failure:
     name: Send Notification
-    needs: [validate, build, deploy, tag]
+    needs: [validate, build, deploy, create_release]
     if: failure()
     runs-on: ubuntu-latest
     steps:
@@ -185,4 +199,4 @@ jobs:
           html_body: |
             <h2>Falha no Pipeline do FoodClub Server</h2>
             <p>Ocorreu uma falha no pipeline de CI/CD para a branch <strong>${{ github.ref_name }}</strong>.</p>
-            <p>Para ver os detalhes, <a href="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}">clique aqui</a>.</p>
+            <p>Para ver os detalhes, <a href="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}">clique aqui</a>.</p>p>
