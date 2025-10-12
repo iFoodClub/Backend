@@ -170,18 +170,18 @@ jobs:
           latest_tag=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
           
           if [ -z "$latest_tag" ]; then
-            # Se não há tags, pega todos os commits
-            commits=$(git log --pretty=format:"* **%s** - %an (%h)" --since="1 week ago")
+            # Se não há tags, pega todos os commits (excluindo merges)
+            commits=$(git log --pretty=format:"* **%s** - %an (%h)" --since="1 week ago" --no-merges)
           else
-            # Se há tags, pega commits desde o último tag
-            commits=$(git log --pretty=format:"* **%s** - %an (%h)" $latest_tag..HEAD)
+            # Se há tags, pega commits desde o último tag (excluindo merges)
+            commits=$(git log --pretty=format:"* **%s** - %an (%h)" $latest_tag..HEAD --no-merges)
           fi
           
-          # Categoriza os commits
-          features=$(echo "$commits" | grep -E "feat|feature" || echo "")
-          fixes=$(echo "$commits" | grep -E "fix|bugfix" || echo "")
-          improvements=$(echo "$commits" | grep -E "chore|refactor|perf|style" || echo "")
-          docs=$(echo "$commits" | grep -E "docs|doc" || echo "")
+          # Categoriza os commits (ignorando commits de merge e duplicatas)
+          features=$(echo "$commits" | grep -E "feat|feature" | grep -v "Merge pull request" || echo "")
+          fixes=$(echo "$commits" | grep -E "fix|bugfix" | grep -v "Merge pull request" || echo "")
+          improvements=$(echo "$commits" | grep -E "chore|refactor|perf|style" | grep -v "Merge pull request" || echo "")
+          docs=$(echo "$commits" | grep -E "docs|doc" | grep -v "Merge pull request" || echo "")
           
           # Cria o changelog estruturado
           {
