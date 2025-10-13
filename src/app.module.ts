@@ -18,15 +18,35 @@ import { EmployeeWeeklyOrdersController } from './interfaces/http/controllers/em
 import { RestaurantRatingModule } from './interfaces/http/restaurant-rating.module';
 import { RestaurantRatingController } from './interfaces/http/controllers/restaurant-rating.controller';
 import { EmployeeWeeklyOrdersModule } from './interfaces/http/employee-weekly-orders.module';
-import { HealthCheckModule} from './interfaces/http/health-check.module';
+import { HealthCheckModule } from './interfaces/http/health-check.module';
+import { UploadModule } from './interfaces/http/upload.module';
 
 @Module({
-  imports: [ConfigModule.forRoot({ isGlobal: true }), CompanyModule, DishModule, DatabaseModule, EmployeeModule, DishRatingModule,
-            RestaurantModule, UserModule, AuthModule, EmployeeWeeklyOrdersModule,
-            RestaurantRatingModule, HealthCheckModule],
-  controllers: [CompanyController, DishController, EmployeeController, DishRatingControlller,
-                RestaurantController,UserController, EmployeeWeeklyOrdersController,
-                RestaurantRatingController],
+  imports: [
+    ConfigModule.forRoot({ isGlobal: true }),
+    CompanyModule,
+    DishModule,
+    DatabaseModule,
+    EmployeeModule,
+    DishRatingModule,
+    RestaurantModule,
+    UserModule,
+    AuthModule,
+    EmployeeWeeklyOrdersModule,
+    RestaurantRatingModule,
+    HealthCheckModule,
+    UploadModule,
+  ],
+  controllers: [
+    CompanyController,
+    DishController,
+    EmployeeController,
+    DishRatingControlller,
+    RestaurantController,
+    UserController,
+    EmployeeWeeklyOrdersController,
+    RestaurantRatingController,
+  ],
   providers: [],
 })
 export class AppModule {}
