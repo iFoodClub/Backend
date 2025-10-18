@@ -186,7 +186,7 @@ jobs:
           # Cria o changelog estruturado
           {
             echo "changelog<<EOF"
-            echo "# FoodClub Backend - Versão ${{ needs.version.outputs.new_version }}"
+            echo "# Backend do FoodClub - Versão ${{ needs.version.outputs.new_version }}"
             echo ""
             echo "**📅 Data de Release:** $release_date"
             echo "**🌟 Branch:** ${{ github.ref_name }}"
@@ -243,10 +243,10 @@ jobs:
           git push origin "${{ needs.version.outputs.new_version }}"
       
       - name: Create GitHub Release
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ needs.version.outputs.new_version }}
-          name: "FoodClub Backend v${{ needs.version.outputs.new_version }}"
+          name: "FoodClub Backend ${{ needs.version.outputs.new_version }}"
           body: ${{ steps.generate_changelog.outputs.changelog }}
           prerelease: ${{ github.ref == 'refs/heads/development' }}
           generate_release_notes: false
