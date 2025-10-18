@@ -36,7 +36,7 @@ export class EmployeeController {
     status: 500,
     description: 'Erro interno do servidor',
   })
-  async list(): Promise<EmployeeEntityInterface[]> {
+  async list(): Promise<any[]> {
     const employeeList = await this.listEmployeesService.execute();
 
     return employeeList;
