@@ -22,10 +22,10 @@ export class CreateUserService {
         if(data.userType === 'employee'){   
             const validate = await this.createEmployeeService.validateUserCreateEmployee({
                 id: undefined,
-                name: data.employee.name,
+                name: data.name, // Usa o name principal em vez de data.employee.name
                 cpf: data.cpf,
                 companyId: data.company.id,
-                userId: data.id,
+                userId: undefined,
                 birthDate: data.employee.birthDate,
             } as EmployeeInterface);
             if (!validate) {
@@ -35,9 +35,9 @@ export class CreateUserService {
         if(data.userType === 'company'){
             const validate = await this.createCompanyService.validateUserCreateCompany({
                 id: undefined,
-                name: data.company.name,
+                name: data.name, // Usa o name principal em vez de data.company.name
                 cnpj: data.cnpj,
-                userId: data.id,
+                userId: undefined,
                 cep: data.company.cep,
                 number: data.company.number,
                 restaurantId: data.company.restaurantId,
@@ -49,9 +49,9 @@ export class CreateUserService {
         if(data.userType === 'restaurant'){
             await this.createRestaurantService.validateUserCreateRestaurant({
                 id: undefined,
-                name: data.restaurant.name,
+                name: data.name, // Usa o name principal em vez de data.restaurant.name
                 cnpj: data.cnpj,
-                userId: data.id,
+                userId: undefined,
                 cep: data.restaurant.cep,
                 rua: data.restaurant.rua,
                 cidade: data.restaurant.cidade,
@@ -66,7 +66,7 @@ export class CreateUserService {
         if(data.userType === 'employee'){
             await this.createEmployeeService.execute({
                 id: undefined,
-                name: data.employee.name,
+                name: data.name, // Usa o name principal em vez de data.employee.name
                 cpf: data.cpf,
                 companyId: data.company.id,
                 userId: data.id,
@@ -77,7 +77,7 @@ export class CreateUserService {
         if(data.userType === 'company'){
             await this.createCompanyService.execute({
                 id: undefined,
-                name: data.company.name,
+                name: data.name, // Usa o name principal em vez de data.company.name
                 cnpj: data.cnpj,
                 userId: data.id,
                 cep: data.company.cep,
@@ -88,7 +88,7 @@ export class CreateUserService {
         if(data.userType === 'restaurant'){
             await this.createRestaurantService.execute({
                 id: undefined,
-                name: data.restaurant.name,
+                name: data.name, // Usa o name principal em vez de data.restaurant.name
                 cnpj: data.cnpj,
                 userId: data.id,
                 cep: data.restaurant.cep,

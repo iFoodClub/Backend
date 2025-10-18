@@ -104,8 +104,8 @@ export class UserController {
 
 ### 1. Funcionário (employee)
 - **Campos obrigatórios:** \`name\`, \`email\`, \`password\`, \`cpf\`, \`employee\`, \`company\`
-- O campo \`employee\` deve conter: \`name\`, \`birthDate\`
-- O campo \`company\` deve co, \`profileImage\`nter: \`id\` (ID da empresa)
+- O campo \`employee\` deve conter: \`birthDate\` (o \`name\` será usado automaticamente do campo principal)
+- O campo \`company\` deve conter: \`id\` (ID da empresa)
 
 **Exemplo:**
 \`\`\`json
@@ -116,7 +116,6 @@ export class UserController {
   "profileImage": "https://exemplo.com/joao.jpg",
   "cpf": "12345678901",
   "employee": {
-    "name": "João da Silva",
     "birthDate": "1990-05-10"
   },
   "company": {
@@ -129,7 +128,7 @@ export class UserController {
 
 ### 2. Restaurante (restaurant)
 - **Campos obrigatórios:** \`name\`, \`email\`, \`password\`, \`profileImage\`, \`cnpj\`, \`restaurant\`
-- O campo \`restaurant\` deve conter: \`name\`, \`cep\`, \`rua\`, \`cidade\`, \`estado\`, \`number\`, \`complemento\` (opcional)
+- O campo \`restaurant\` deve conter: \`cep\`, \`rua\`, \`cidade\`, \`estado\`, \`number\`, \`complemento\` (opcional) (o \`name\` será usado automaticamente do campo principal)
 
 **Exemplo:**
 \`\`\`json
@@ -140,7 +139,6 @@ export class UserController {
   "profileImage": "https://exemplo.com/restaurante.jpg",
   "cnpj": "98765432000188",
   "restaurant": {
-    "name": "Restaurante Saboroso",
     "cep": "87654321",
     "rua": "Rua das Flores",
     "cidade": "São Paulo",
@@ -155,7 +153,7 @@ export class UserController {
 
 ### 3. Empresa (company)
 - **Campos obrigatórios:** \`name\`, \`email\`, \`password\`, \`profileImage\`, \`cnpj\`, \`company\`
-- O campo \`company\` deve conter: \`name\`, \`cep\`, \`number\` e opcionalmente \`restaurantId\` (pode ser \`null\`)
+- O campo \`company\` deve conter: \`cep\`, \`number\` e opcionalmente \`restaurantId\` (pode ser \`null\`) (o \`name\` será usado automaticamente do campo principal)
 
 **Exemplo:**
 \`\`\`json
@@ -166,7 +164,6 @@ export class UserController {
   "profileImage": "https://exemplo.com/empresa.jpg",
   "cnpj": "12345678000199",
   "company": {
-    "name": "Empresa ABC Ltda",
     "cep": "12345678",
     "number": "100",
     "restaurantId": null
@@ -194,7 +191,6 @@ export class UserController {
             profileImage: 'https://exemplo.com/joao.jpg',
             cpf: '12345678901',
             employee: {
-              name: 'João da Silva',
               birthDate: '1990-05-10',
             },
             company: {
@@ -212,7 +208,6 @@ export class UserController {
             profileImage: 'https://exemplo.com/restaurante.jpg',
             cnpj: '98765432000188',
             restaurant: {
-              name: 'Restaurante Saboroso',
               cep: '87654321',
               rua: 'Rua das Flores',
               cidade: 'São Paulo',
@@ -232,7 +227,6 @@ export class UserController {
             profileImage: 'https://exemplo.com/empresa.jpg',
             cnpj: '12345678000199',
             company: {
-              name: 'Empresa ABC Ltda',
               cep: '12345678',
               number: '100',
             },
@@ -255,8 +249,8 @@ export class UserController {
     @Body() user: UserInterface,
     @Res() res: Response,
   ): Promise<void> {
-    const { email, password, userType } = user;
-    if (!(email && password && userType)) {
+    const { email, password, userType, name, profileImage } = user;
+    if (!(email && password && userType && name && profileImage)) {
       throw new Error('Todos os campos são obrigatórios');
     }
     await this.createUserService.execute(user);
