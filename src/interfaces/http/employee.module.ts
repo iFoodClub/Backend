@@ -9,26 +9,39 @@ import { DeleteEmployeeService } from 'src/application/use-cases/delete-employee
 import { GetEmployeeByIdService } from 'src/application/use-cases/get-employee-byid.use-cases';
 import { ListEmployeesService } from 'src/application/use-cases/list-employees.use-cases';
 import { UpdateEmployeeService } from 'src/application/use-cases/update-employee.use-cases';
+import { UploadOwnershipGuard } from 'src/infrastructure/guards/upload-ownership.guard';
+import { CompanyRepository } from 'src/infrastructure/database/repositories/company.repository';
+import { companyProvider } from 'src/infrastructure/providers/company.provider';
+import { RestaurantRepository } from 'src/infrastructure/database/repositories/restaurant.repository';
+import { restaurantProvider } from 'src/infrastructure/providers/restaurant.provider';
+import { DishRepository } from 'src/infrastructure/database/repositories/dish.repository';
+import { dishProvider } from 'src/infrastructure/providers/dish.provider';
 
 @Module({
   imports: [DatabaseModule],
   controllers: [EmployeeController],
   providers: [
     ...employeeProvider,
-    EmployeeRepository, 
+    ...companyProvider,
+    ...restaurantProvider,
+    ...dishProvider,
+    EmployeeRepository,
+    CompanyRepository,
+    RestaurantRepository,
+    DishRepository,
     ListEmployeesService,
     GetEmployeeByIdService,
     CreateEmployeeService,
     UpdateEmployeeService,
-    DeleteEmployeeService
+    DeleteEmployeeService,
+    UploadOwnershipGuard,
   ],
   exports: [
     ListEmployeesService,
     GetEmployeeByIdService,
     CreateEmployeeService,
     UpdateEmployeeService,
-    DeleteEmployeeService
-  ]
+    DeleteEmployeeService,
+  ],
 })
 export class EmployeeModule {}
-

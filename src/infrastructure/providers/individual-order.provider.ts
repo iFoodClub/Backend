@@ -1,5 +1,5 @@
-import { IndividualOrderEntity } from "../database/entities/individual-order.entity";
-import { IndividualOrderRepository } from "../database/repositories/individual-order.repository";
+import { IndividualOrderEntity } from '../database/entities/individual-order.entity';
+import { IndividualOrderRepository } from '../database/repositories/individual-order.repository';
 
 export const individualOrderProvider = [
   {
