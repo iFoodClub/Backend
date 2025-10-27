@@ -1,5 +1,5 @@
-import { EmployeeWeeklyOrdersEntity } from "../database/entities/employee-weekly-orders.entity";
-import { EmployeeWeeklyOrdersRepository } from "../database/repositories/employee-weekly-orders.repository";
+import { EmployeeWeeklyOrdersEntity } from '../database/entities/employee-weekly-orders.entity';
+import { EmployeeWeeklyOrdersRepository } from '../database/repositories/employee-weekly-orders.repository';
 
 export const employeeWeeklyOrdersProvider = [
   {

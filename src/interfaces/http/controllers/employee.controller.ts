@@ -1,4 +1,15 @@
-import { Body, Controller, Delete, Get, HttpCode, Param, Post, Put, Res } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  HttpCode,
+  Param,
+  Post,
+  Put,
+  Res,
+  UseGuards,
+} from '@nestjs/common';
 
 import { GetEmployeeByIdService } from '../../../application/use-cases/get-employee-byid.use-cases';
 import { EmployeeInterface } from 'src/domain/models/employee.model';
@@ -13,6 +24,9 @@ import { ListEmployeeDtoResponse } from 'src/interfaces/http/dtos/response/listE
 import { CreateEmployeeDto } from 'src/interfaces/http/dtos/request/createEmployee.dto';
 import { Http400 } from 'src/interfaces/http/dtos/response/http400';
 import { Http404 } from 'src/interfaces/http/dtos/response/http404';
+import { JwtAuthGuard } from 'src/infrastructure/guards/jwt-auth.guard';
+import { UploadAuthorizationGuard } from 'src/infrastructure/guards/upload-authorization.guard';
+import { UploadOwnershipGuard } from 'src/infrastructure/guards/upload-ownership.guard';
 
 @ApiTags('Employee API')
 @Controller('employee')
@@ -22,7 +36,7 @@ export class EmployeeController {
     private readonly getEmployeeByIdService: GetEmployeeByIdService,
     private readonly createEmployeeService: CreateEmployeeService,
     private readonly updateEmployeeService: UpdateEmployeeService,
-    private readonly deleteEmployeeService: DeleteEmployeeService
+    private readonly deleteEmployeeService: DeleteEmployeeService,
   ) {}
 
   @Get()
@@ -56,7 +70,10 @@ export class EmployeeController {
     status: 404,
     description: 'Funcionário não encontrado',
   })
-  async getById(@Param('id') id: string, @Res() res: Response): Promise<EmployeeEntityInterface> {
+  async getById(
+    @Param('id') id: string,
+    @Res() res: Response,
+  ): Promise<EmployeeEntityInterface> {
     const employee = await this.getEmployeeByIdService.execute(Number(id));
     if (!employee) {
       res.status(404).json({
@@ -84,15 +101,24 @@ export class EmployeeController {
     description: 'Erro ao criar funcionário',
     type: Http400,
   })
-  async create(
-    @Body() employee: EmployeeInterface, @Res() res: Response) {
-      const expectedFields = ['userId', 'companyId', 'name', 'cpf', 'birthDate', 'vacation', 'profileImage'];
-      const receivedFields = Object.keys(employee);
-      const invalidFields = receivedFields.filter(field => !expectedFields.includes(field));
-      if(invalidFields.length > 0) {
+  async create(@Body() employee: EmployeeInterface, @Res() res: Response) {
+    const expectedFields = [
+      'userId',
+      'companyId',
+      'name',
+      'cpf',
+      'birthDate',
+      'vacation',
+      'profileImage',
+    ];
+    const receivedFields = Object.keys(employee);
+    const invalidFields = receivedFields.filter(
+      (field) => !expectedFields.includes(field),
+    );
+    if (invalidFields.length > 0) {
       res.status(400).json({
         sucess: false,
-        message: `Os seguintes campos são inválidos: ${invalidFields.join(', ')}`
+        message: `Os seguintes campos são inválidos: ${invalidFields.join(', ')}`,
       });
       return;
     }
@@ -100,6 +126,7 @@ export class EmployeeController {
     res.send();
   }
 
+  @UseGuards(JwtAuthGuard, UploadAuthorizationGuard, UploadOwnershipGuard)
   @Put(':id')
   @ApiParam({
     name: 'id',
@@ -123,11 +150,28 @@ export class EmployeeController {
     description: 'Funcionário não encontrado',
     type: Http404,
   })
-  async update(@Param('id') id: string, @Body() employeeData: EmployeeInterface, @Res() res:Response): Promise<EmployeeInterface> {
-    const expectedFields = ['userId', 'companyId', 'name', 'cpf', 'birthDate', 'vacation', 'profileImage'];
+  async update(
+    @Param('id') id: string,
+    @Body() employeeData: EmployeeInterface,
+    @Res() res: Response,
+  ): Promise<EmployeeInterface> {
+    const expectedFields = [
+      'userId',
+      'companyId',
+      'name',
+      'cpf',
+      'birthDate',
+      'vacation',
+      'profileImage',
+    ];
     const receivedFields = Object.keys(employeeData);
-    const invalidFields = receivedFields.filter(field => !expectedFields.includes(field));
-    const user = await this.updateEmployeeService.execute(Number(id), employeeData);
+    const invalidFields = receivedFields.filter(
+      (field) => !expectedFields.includes(field),
+    );
+    const user = await this.updateEmployeeService.execute(
+      Number(id),
+      employeeData,
+    );
     if (!user) {
       res.status(404).json({
         success: false,
@@ -145,6 +189,7 @@ export class EmployeeController {
     res.status(200).json(user);
   }
 
+  @UseGuards(JwtAuthGuard, UploadAuthorizationGuard, UploadOwnershipGuard)
   @Delete(':id')
   @ApiParam({
     name: 'id',
@@ -169,7 +214,7 @@ export class EmployeeController {
       return;
     }
 
-    this.deleteEmployeeService.execute(Number(id));
+    await this.deleteEmployeeService.execute(Number(id));
     res.status(200).json({
       success: true,
       message: 'Funcionário deletado com sucesso',

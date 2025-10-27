@@ -1,5 +1,18 @@
-import { Body, Controller, Delete, Get, HttpCode, Param, Post, Put, Res } from '@nestjs/common';
-import { GetCompanyByIdService } from '../../../application/use-cases/get-company-byid.use-cases'
+/* eslint-disable @typescript-eslint/no-unsafe-member-access */
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  HttpCode,
+  Param,
+  Post,
+  Put,
+  Res,
+  UseGuards,
+} from '@nestjs/common';
+import { GetCompanyByIdService } from '../../../application/use-cases/get-company-byid.use-cases';
 import { CreateCompanyService } from '../../../application/use-cases/create-company.use-cases';
 import { UpdateCompanyService } from '../../../application/use-cases/update-company.use-cases';
 import { DeleteCompanyService } from '../../../application/use-cases/delete-company.use-cases';
@@ -21,6 +34,9 @@ import { ListWeeklyOrdersByCompanyService } from 'src/application/use-cases/list
 import { CreateOrdersFromWeeklyOrdersUseCase } from 'src/application/use-cases/create-orders-from-weekly-orders.use-case';
 import { CompanyWeeklyOrdersResponse } from 'src/interfaces/http/dtos/response/companyWeeklyOrders.dto';
 import { CreateOrdersFromWeeklyResponse } from 'src/interfaces/http/dtos/response/createOrdersFromWeeklyResponse.dto';
+import { JwtAuthGuard } from 'src/infrastructure/guards/jwt-auth.guard';
+import { UploadAuthorizationGuard } from 'src/infrastructure/guards/upload-authorization.guard';
+import { UploadOwnershipGuard } from 'src/infrastructure/guards/upload-ownership.guard';
 
 @ApiTags('Company API')
 @Controller('company')
@@ -35,24 +51,24 @@ export class CompanyController {
     private listIndividualOrderByCompanyUseCase: ListIndividualOrderByCompanyUseCase,
     private createCompanyOrderUseCase: CreateCompanyOrderUseCase,
     private listWeeklyOrdersByCompanyService: ListWeeklyOrdersByCompanyService,
-    private createOrdersFromWeeklyOrdersUseCase: CreateOrdersFromWeeklyOrdersUseCase
+    private createOrdersFromWeeklyOrdersUseCase: CreateOrdersFromWeeklyOrdersUseCase,
   ) {}
 
-   @Get()
-   @ApiResponse({
+  @Get()
+  @ApiResponse({
     status: 200,
     description: 'Consulta realizada com sucesso',
     isArray: true,
     type: ListCompanyDtoResponse,
-   })
-    @ApiResponse({
-      status: 500,
-      description: 'Erro interno do servidor',
-    })
-    async list(): Promise<CompanyEntityInterface[]> {
-      const employeeList = await this.listCompaniesService.execute();
-      return employeeList;
-    }
+  })
+  @ApiResponse({
+    status: 500,
+    description: 'Erro interno do servidor',
+  })
+  async list(): Promise<CompanyEntityInterface[]> {
+    const employeeList = await this.listCompaniesService.execute();
+    return employeeList;
+  }
 
   @Get(':id')
   @ApiParam({
@@ -63,13 +79,16 @@ export class CompanyController {
     status: 200,
     description: 'Empresa encontrada',
     type: ListCompanyDtoResponse,
-   })
+  })
   @ApiResponse({
     status: 404,
     description: 'Empresa não encontrada',
     type: Http404,
   })
-  async getById(@Param('id') id: string, @Res() res: Response): Promise<ListCompanyDtoResponse> {
+  async getById(
+    @Param('id') id: string,
+    @Res() res: Response,
+  ): Promise<ListCompanyDtoResponse> {
     const company = await this.getCompanyByIdService.execute(Number(id));
     if (!company) {
       res.status(404).json({
@@ -97,13 +116,12 @@ export class CompanyController {
     description: 'Erro ao criar empresa',
     type: Http400,
   })
-  async create(
-    @Body() company: CompanyInterface, @Res() res: Response) {
+  async create(@Body() company: CompanyInterface, @Res() res: Response) {
     const { userId, name, cnpj, cep, number } = company;
-    if(!(userId && name && cnpj && cep && number)){
+    if (!(userId && name && cnpj && cep && number)) {
       res.status(400).json({
         sucess: false,
-        message: 'Todos os campos são obrigatórios'
+        message: 'Todos os campos são obrigatórios',
       });
       return;
     }
@@ -112,16 +130,17 @@ export class CompanyController {
       await this.createCompanyService.execute(company);
       res.status(201).json({
         success: true,
-        message: 'Empresa criada com sucesso'
+        message: 'Empresa criada com sucesso',
       });
     } catch (error) {
       res.status(400).json({
         success: false,
-        message: error.message
+        message: error.message,
       });
     }
   }
 
+  @UseGuards(JwtAuthGuard, UploadAuthorizationGuard, UploadOwnershipGuard)
   @Put(':id')
   @ApiParam({
     name: 'id',
@@ -145,12 +164,26 @@ export class CompanyController {
     description: 'Erro ao atualizar empresa',
     type: Http400,
   })
-  async update(@Param('id') id: string, @Body() companyData: CompanyInterface, @Res() res: Response): Promise<CompanyInterface> {
-    const expectedFields = ['userId', 'name', 'cnpj', 'cep', 'number', 'restaurantId', 'profileImage'];
+  async update(
+    @Param('id') id: string,
+    @Body() companyData: CompanyInterface,
+    @Res() res: Response,
+  ): Promise<CompanyInterface> {
+    const expectedFields = [
+      'userId',
+      'name',
+      'cnpj',
+      'cep',
+      'number',
+      'restaurantId',
+      'profileImage',
+    ];
     const receivedFields = Object.keys(companyData);
-    const invalidFields = receivedFields.filter(field => !expectedFields.includes(field));
-    
-    if(invalidFields.length > 0){
+    const invalidFields = receivedFields.filter(
+      (field) => !expectedFields.includes(field),
+    );
+
+    if (invalidFields.length > 0) {
       res.status(400).json({
         sucess: false,
         message: `Os seguintes campos são inválidos: ${invalidFields.join(', ')}`,
@@ -159,7 +192,10 @@ export class CompanyController {
     }
 
     try {
-      const company = await this.updateCompanyService.execute(Number(id), companyData);
+      const company = await this.updateCompanyService.execute(
+        Number(id),
+        companyData,
+      );
       if (!company) {
         res.status(404).json({
           success: false,
@@ -171,11 +207,12 @@ export class CompanyController {
     } catch (error) {
       res.status(400).json({
         success: false,
-        message: error.message
+        message: error.message,
       });
     }
   }
 
+  @UseGuards(JwtAuthGuard, UploadAuthorizationGuard, UploadOwnershipGuard)
   @Delete(':id')
   @ApiParam({
     name: 'id',
@@ -190,7 +227,7 @@ export class CompanyController {
     description: 'Empresa não encontrada',
     type: Http404,
   })
-  async delete(@Param('id') id: string,@Res() res: Response): Promise<void> {
+  async delete(@Param('id') id: string, @Res() res: Response): Promise<void> {
     const company = await this.getCompanyByIdService.execute(Number(id));
     if (!company) {
       res.status(404).json({
@@ -199,7 +236,7 @@ export class CompanyController {
       });
       return;
     }
-    this.deleteCompanyService.execute(Number(id));
+    await this.deleteCompanyService.execute(Number(id));
     res.status(200).json({
       success: true,
       message: 'Empresa deletada com sucesso',
@@ -222,7 +259,10 @@ export class CompanyController {
     description: 'Empresa não encontrada',
     type: Http404,
   })
-  async getEmployeesByCompany(@Param('id') id: string, @Res() res: Response): Promise<ListEmployeeWithProfileImageDto[]> {
+  async getEmployeesByCompany(
+    @Param('id') id: string,
+    @Res() res: Response,
+  ): Promise<ListEmployeeWithProfileImageDto[]> {
     const company = await this.getCompanyByIdService.execute(Number(id));
     if (!company) {
       res.status(404).json({
@@ -232,7 +272,9 @@ export class CompanyController {
       return;
     }
 
-    const employees = await this.listEmployeesByCompanyService.execute(Number(id));
+    const employees = await this.listEmployeesByCompanyService.execute(
+      Number(id),
+    );
     res.status(200).json(employees);
   }
 
@@ -252,8 +294,13 @@ export class CompanyController {
     description: 'Empresa não encontrada',
     type: Http404,
   })
-  async getOrdersByCompany(@Param('id') id: string, @Res() res: Response): Promise<IndividualOrderEntityInterface[]> {
-    const orders = await this.listIndividualOrderByCompanyUseCase.execute(Number(id));
+  async getOrdersByCompany(
+    @Param('id') id: string,
+    @Res() res: Response,
+  ): Promise<IndividualOrderEntityInterface[]> {
+    const orders = await this.listIndividualOrderByCompanyUseCase.execute(
+      Number(id),
+    );
     res.status(200).json(orders);
     return;
   }
@@ -266,8 +313,11 @@ export class CompanyController {
   @ApiResponse({
     status: 200,
     description: 'Pedido da empresa criado com sucesso',
-  })  
-  async createOrder(@Param('id') id: string, @Res() res: Response): Promise<void> {
+  })
+  async createOrder(
+    @Param('id') id: string,
+    @Res() res: Response,
+  ): Promise<void> {
     const result = await this.createCompanyOrderUseCase.execute(Number(id));
     res.status(200).json(result);
   }
@@ -279,7 +329,8 @@ export class CompanyController {
   })
   @ApiResponse({
     status: 200,
-    description: 'Pedidos semanais dos funcionários da empresa para o dia atual',
+    description:
+      'Pedidos semanais dos funcionários da empresa para o dia atual',
     type: CompanyWeeklyOrdersResponse,
   })
   @ApiResponse({
@@ -287,7 +338,10 @@ export class CompanyController {
     description: 'Empresa não encontrada',
     type: Http404,
   })
-  async getWeeklyOrdersByCompany(@Param('id') id: string, @Res() res: Response): Promise<void> {
+  async getWeeklyOrdersByCompany(
+    @Param('id') id: string,
+    @Res() res: Response,
+  ): Promise<void> {
     const company = await this.getCompanyByIdService.execute(Number(id));
     if (!company) {
       res.status(404).json({
@@ -297,7 +351,9 @@ export class CompanyController {
       return;
     }
 
-    const weeklyOrders = await this.listWeeklyOrdersByCompanyService.execute(Number(id));
+    const weeklyOrders = await this.listWeeklyOrdersByCompanyService.execute(
+      Number(id),
+    );
     res.status(200).json(weeklyOrders);
   }
 
@@ -308,7 +364,8 @@ export class CompanyController {
   })
   @ApiResponse({
     status: 200,
-    description: 'Pedidos criados com sucesso baseados nos pedidos semanais do dia atual',
+    description:
+      'Pedidos criados com sucesso baseados nos pedidos semanais do dia atual',
     type: CreateOrdersFromWeeklyResponse,
   })
   @ApiResponse({
@@ -316,7 +373,10 @@ export class CompanyController {
     description: 'Empresa não encontrada',
     type: Http404,
   })
-  async createOrdersFromWeeklyOrders(@Param('id') id: string, @Res() res: Response): Promise<void> {
+  async createOrdersFromWeeklyOrders(
+    @Param('id') id: string,
+    @Res() res: Response,
+  ): Promise<void> {
     const company = await this.getCompanyByIdService.execute(Number(id));
     if (!company) {
       res.status(404).json({
@@ -326,7 +386,9 @@ export class CompanyController {
       return;
     }
 
-    const result = await this.createOrdersFromWeeklyOrdersUseCase.execute(Number(id));
+    const result = await this.createOrdersFromWeeklyOrdersUseCase.execute(
+      Number(id),
+    );
     res.status(200).json(result);
   }
 }
