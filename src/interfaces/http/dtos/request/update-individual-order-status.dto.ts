@@ -17,4 +17,4 @@ export class UpdateIndividualOrderStatusDto {
   })
   @IsEnum(IndividualOrderStatus)
   status: IndividualOrderStatus;
-} 
+}

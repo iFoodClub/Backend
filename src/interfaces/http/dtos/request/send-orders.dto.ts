@@ -10,4 +10,4 @@ export class SendOrdersDto {
   @IsArray()
   @IsNumber({}, { each: true })
   orderIds: number[];
-} 
+}

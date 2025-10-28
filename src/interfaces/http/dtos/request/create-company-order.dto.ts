@@ -55,4 +55,4 @@ export class CreateCompanyOrderDto {
   @ValidateNested({ each: true })
   @Type(() => CreateIndividualOrderDto)
   individualOrders: CreateIndividualOrderDto[];
-} 
+}

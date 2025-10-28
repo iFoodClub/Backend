@@ -1,52 +1,52 @@
-import { ApiProperty } from "@nestjs/swagger";
+import { ApiProperty } from '@nestjs/swagger';
 
 export class UpdateCompanyDto {
-    @ApiProperty({
+  @ApiProperty({
     description: 'Nome da empresa',
     type: String,
     example: 'Food Club',
-    })
-    company_name: string;
+  })
+  company_name: string;
 
-    @ApiProperty({
-        description: 'CEP da empresa',
-        type: String,
-        example: '12345-678',
-    })
-    zip_code: string;
-    
-    @ApiProperty({
+  @ApiProperty({
+    description: 'CEP da empresa',
+    type: String,
+    example: '12345-678',
+  })
+  zip_code: string;
+
+  @ApiProperty({
     description: 'Rua da empresa',
     type: String,
     example: 'Avenida Paulista',
-    })
-    street: string;
-    
-    @ApiProperty({
+  })
+  street: string;
+
+  @ApiProperty({
     description: 'Número da empresa',
     type: String,
     example: '1000',
-    })
-    number: string;
+  })
+  number: string;
 
-    @ApiProperty({
+  @ApiProperty({
     description: 'Cidade da empresa',
     type: String,
     example: 'São Paulo',
-    })
-    city: string;
+  })
+  city: string;
 
-    @ApiProperty({
+  @ApiProperty({
     description: 'CNPJ da empresa',
     type: String,
     example: '12.345.678/0001-90',
-    })
-    cnpj: string;
-    
-    @ApiProperty({
+  })
+  cnpj: string;
+
+  @ApiProperty({
     description: 'Estado da empresa',
     type: String,
     example: 'SP',
-    })
-    state: string;
-    }
+  })
+  state: string;
+}
