@@ -60,9 +60,6 @@ export class CreateEmployeeUserDto {
   @IsNotEmpty({ message: 'Nome é obrigatório' })
   @MinLength(2, { message: 'Nome deve ter pelo menos 2 caracteres' })
   @MaxLength(100, { message: 'Nome deve ter no máximo 100 caracteres' })
-  @Matches(/^[a-zA-ZÀ-ÿ\s]+$/, {
-    message: 'Nome deve conter apenas letras e espaços',
-  })
   name: string;
 
   @ApiProperty({
