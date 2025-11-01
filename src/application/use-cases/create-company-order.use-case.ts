@@ -30,6 +30,11 @@ export class CreateCompanyOrderUseCase {
 
     const createOrderDto = await this.individualOrderRepository.listByCompanyOrderIdNull(companyId);
 
+    // Verificar se existem pedidos pendentes
+    if (!createOrderDto || createOrderDto.length === 0) {
+      throw new NotFoundException('Nenhum pedido individual pendente encontrado para esta empresa');
+    }
+
     // Validar se a empresa existe
     const company = await this.companyRepository.getById(createOrderDto[0].companyId);
 

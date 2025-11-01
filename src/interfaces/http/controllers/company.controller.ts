@@ -12,6 +12,8 @@ import {
   Res,
   UseGuards,
   UsePipes,
+  NotFoundException,
+  BadRequestException,
 } from '@nestjs/common';
 import { GetCompanyByIdService } from '../../../application/use-cases/get-company-byid.use-cases';
 import { CreateCompanyService } from '../../../application/use-cases/create-company.use-cases';
@@ -325,12 +327,31 @@ export class CompanyController {
     status: 200,
     description: 'Pedido da empresa criado com sucesso',
   })
+  @ApiResponse({
+    status: 404,
+    description: 'Empresa não encontrada ou nenhum pedido pendente',
+    type: Http404,
+  })
   async createOrder(
     @Param('id') id: string,
     @Res() res: Response,
   ): Promise<void> {
-    const result = await this.createCompanyOrderUseCase.execute(Number(id));
-    res.status(200).json(result);
+    try {
+      const result = await this.createCompanyOrderUseCase.execute(Number(id));
+      res.status(200).json(result);
+    } catch (error) {
+      if (error instanceof NotFoundException) {
+        res.status(404).json({
+          success: false,
+          message: error.message,
+        });
+      } else {
+        res.status(500).json({
+          success: false,
+          message: 'Erro interno do servidor',
+        });
+      }
+    }
   }
 
   @Get(':id/weekly-orders')
@@ -380,6 +401,11 @@ export class CompanyController {
     type: CreateOrdersFromWeeklyResponse,
   })
   @ApiResponse({
+    status: 400,
+    description: 'Nem todos os funcionários preencheram seus pedidos semanais',
+    type: Http400,
+  })
+  @ApiResponse({
     status: 404,
     description: 'Empresa não encontrada',
     type: Http404,
@@ -388,18 +414,40 @@ export class CompanyController {
     @Param('id') id: string,
     @Res() res: Response,
   ): Promise<void> {
-    const company = await this.getCompanyByIdService.execute(Number(id));
-    if (!company) {
-      res.status(404).json({
-        success: false,
-        message: 'Empresa não encontrada',
-      });
-      return;
-    }
+    try {
+      const company = await this.getCompanyByIdService.execute(Number(id));
+      if (!company) {
+        res.status(404).json({
+          success: false,
+          message: 'Empresa não encontrada',
+        });
+        return;
+      }
 
-    const result = await this.createOrdersFromWeeklyOrdersUseCase.execute(
-      Number(id),
-    );
-    res.status(200).json(result);
+      const result = await this.createOrdersFromWeeklyOrdersUseCase.execute(
+        Number(id),
+      );
+      res.status(200).json(result);
+    } catch (error) {
+      if (error instanceof NotFoundException) {
+        res.status(404).json({
+          success: false,
+          message: error.message,
+        });
+      } else if (error instanceof BadRequestException) {
+        res.status(400).json({
+          success: false,
+          message: error.message,
+        });
+      } else {
+        console.error('Erro ao criar pedidos a partir dos semanais:', error);
+        const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido';
+        res.status(500).json({
+          success: false,
+          message: 'Erro interno do servidor',
+          error: process.env.NODE_ENV === 'development' ? errorMessage : undefined,
+        });
+      }
+    }
   }
 }

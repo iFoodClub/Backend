@@ -24,31 +24,32 @@ export class CreateOrUpdateWeeklyOrderService {
         throw new NotFoundException('Funcionário não encontrado');
     }
     
+    // Primeiro criar o OrderItem (não tem id ainda, vem apenas dishId e quantity)
+    const orderItems = await this.orderItemRepository.create(employeeWeeklyOrder.order);
+    
     const individualOrder = {
       employeeId: employeeWeeklyOrder.employeeId,
       dayOfWeek: employeeWeeklyOrder.dayOfWeek,
-      orderItemId: employeeWeeklyOrder.order.id,
+      orderItemId: orderItems.id,
     }
 
     const existingOrder = await this.employeeWeeklyOrdersRepository.findByEmployeeAndDay(employeeWeeklyOrder.employeeId,employeeWeeklyOrder.dayOfWeek);
     if (existingOrder) {
-      const orderItems = await this.orderItemRepository.create(employeeWeeklyOrder.order);
-      individualOrder.orderItemId = orderItems.id;
+      // Atualizar o pedido semanal existente com o novo OrderItem
       const updatedWeeklyOrder = await this.employeeWeeklyOrdersRepository.update(existingOrder.id, individualOrder);
 
       if (!updatedWeeklyOrder) {
         throw new NotFoundException('Erro ao atualizar pedido semanal');
       }
       return updatedWeeklyOrder;
-    }else{
-      const orderItems = await this.orderItemRepository.create(employeeWeeklyOrder.order);
-      individualOrder.orderItemId = orderItems.id;      
-    const newOrder = await this.employeeWeeklyOrdersRepository.create(individualOrder);
-    if (!newOrder) {
-      throw new NotFoundException('Erro ao criar pedido semanal');
-    }
+    } else {
+      // Criar novo pedido semanal
+      const newOrder = await this.employeeWeeklyOrdersRepository.create(individualOrder);
+      if (!newOrder) {
+        throw new NotFoundException('Erro ao criar pedido semanal');
+      }
 
-    return newOrder;
+      return newOrder;
     }
   }
 } 
