@@ -12,3 +12,16 @@ export interface EmployeeInterface {
     individualOrders?: IndividualOrderEntityInterface[];
     profileImage?: string;
 }
+
+export interface IEmployeePopulate {
+    id: number;
+    userId: number;
+    company: {
+        id: number;
+        selectedRestaurantId: number | null;
+    };
+    name: string;
+    cpf: string;
+    birthDate: string;
+    vacation: boolean;
+}
