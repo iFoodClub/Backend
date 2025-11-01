@@ -9,6 +9,7 @@ import {
   Body,
   HttpCode,
   HttpStatus,
+  UseGuards,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import {
@@ -30,6 +31,8 @@ import {
   UploadImageResponseDto,
   DeleteImageResponseDto,
 } from '../dtos/response/upload-response.dto';
+import { JwtAuthGuard } from 'src/infrastructure/guards/jwt-auth.guard';
+import { UploadAuthorizationGuard } from 'src/infrastructure/guards/upload-authorization.guard';
 
 @ApiTags('Upload de Imagens')
 @ApiExtraModels(
@@ -39,6 +42,7 @@ import {
   DeleteImageResponseDto,
 )
 @Controller('upload')
+@UseGuards(JwtAuthGuard, UploadAuthorizationGuard)
 export class UploadController {
   constructor(private readonly s3UploadService: S3UploadService) {}
 
@@ -259,7 +263,7 @@ export class UploadController {
   })
   @ApiResponse({
     status: 400,
-    description: 'Erro ao deletar imagem',
+    description: '❌ Erro ao deletar imagem',
   })
   async deleteImage(@Body() body: { key: string }) {
     if (!body.key) {

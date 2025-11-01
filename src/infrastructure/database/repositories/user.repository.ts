@@ -13,7 +13,9 @@ export class UserRepository {
     return await this.userEntity.findAll();
   }
 
-  async create(user: Omit<UserEntityInterface, 'id'>): Promise<UserEntityInterface> {
+  async create(
+    user: Omit<UserEntityInterface, 'id'>,
+  ): Promise<UserEntityInterface> {
     return await this.userEntity.create(user);
   }
 

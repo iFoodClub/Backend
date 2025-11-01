@@ -28,6 +28,9 @@ import { DishRepository } from 'src/infrastructure/database/repositories/dish.re
 import { companyOrderProvider } from 'src/infrastructure/providers/company-order.provider';
 import { CompanyOrderRepository } from 'src/infrastructure/database/repositories/company-order.repository';
 import { AuthModule } from './auth.module';
+import { UploadOwnershipGuard } from 'src/infrastructure/guards/upload-ownership.guard';
+import { RestaurantRepository } from 'src/infrastructure/database/repositories/restaurant.repository';
+import { restaurantProvider } from 'src/infrastructure/providers/restaurant.provider';
 
 @Module({
   imports: [DatabaseModule, AuthModule],
@@ -41,6 +44,7 @@ import { AuthModule } from './auth.module';
     ...orderItemProvider,
     ...dishProvider,
     ...companyOrderProvider,
+    ...restaurantProvider,
     CompanyRepository,
     UserRepository,
     EmployeeRepository,
@@ -49,16 +53,18 @@ import { AuthModule } from './auth.module';
     OrderItemRepository,
     DishRepository,
     CompanyOrderRepository,
+    RestaurantRepository,
+    UploadOwnershipGuard,
     ListCompaniesService,
-    GetCompanyByIdService, 
-    CreateCompanyService, 
-    UpdateCompanyService, 
+    GetCompanyByIdService,
+    CreateCompanyService,
+    UpdateCompanyService,
     DeleteCompanyService,
     ListEmployeesByCompanyService,
     ListIndividualOrderByCompanyUseCase,
     CreateCompanyOrderUseCase,
     ListWeeklyOrdersByCompanyService,
-    CreateOrdersFromWeeklyOrdersUseCase
+    CreateOrdersFromWeeklyOrdersUseCase,
   ],
   exports: [
     ListCompaniesService,
@@ -70,7 +76,7 @@ import { AuthModule } from './auth.module';
     ListIndividualOrderByCompanyUseCase,
     CreateCompanyOrderUseCase,
     ListWeeklyOrdersByCompanyService,
-    CreateOrdersFromWeeklyOrdersUseCase
-  ]
+    CreateOrdersFromWeeklyOrdersUseCase,
+  ],
 })
 export class CompanyModule {}

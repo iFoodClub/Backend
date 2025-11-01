@@ -1,77 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { UserType } from 'src/domain/repositories/user.repository.interface';
-import {
-  IsString,
-  IsEmail,
-  IsNotEmpty,
-  IsOptional,
-  IsEnum,
-  MinLength,
-  MaxLength,
-  ValidateNested,
-  IsDateString,
-} from 'class-validator';
-import { Type } from 'class-transformer';
-
-// Classes para validação de objetos aninhados
-export class EmployeeDataDto {
-  @IsString({ message: 'Nome do funcionário deve ser uma string' })
-  @IsNotEmpty({ message: 'Nome do funcionário é obrigatório' })
-  @MinLength(2, {
-    message: 'Nome do funcionário deve ter pelo menos 2 caracteres',
-  })
-  @MaxLength(100, {
-    message: 'Nome do funcionário deve ter no máximo 100 caracteres',
-  })
-  name: string;
-
-  @IsDateString(
-    {},
-    { message: 'Data de nascimento deve ter formato válido (YYYY-MM-DD)' },
-  )
-  @IsNotEmpty({ message: 'Data de nascimento é obrigatória' })
-  birthDate: string;
-}
-
-export class RestaurantDataDto {
-  @IsString({ message: 'Nome do restaurante deve ser uma string' })
-  @IsNotEmpty({ message: 'Nome do restaurante é obrigatório' })
-  @MinLength(2, {
-    message: 'Nome do restaurante deve ter pelo menos 2 caracteres',
-  })
-  @MaxLength(100, {
-    message: 'Nome do restaurante deve ter no máximo 100 caracteres',
-  })
-  name: string;
-
-  @IsString({ message: 'CEP deve ser uma string' })
-  @IsNotEmpty({ message: 'CEP é obrigatório' })
-  cep: string;
-
-  @IsString({ message: 'Número deve ser uma string' })
-  @IsNotEmpty({ message: 'Número é obrigatório' })
-  @MaxLength(10, { message: 'Número deve ter no máximo 10 caracteres' })
-  number: string;
-}
-
-export class CompanyDataDto {
-  @IsString({ message: 'Nome da empresa deve ser uma string' })
-  @IsNotEmpty({ message: 'Nome da empresa é obrigatório' })
-  @MinLength(2, { message: 'Nome da empresa deve ter pelo menos 2 caracteres' })
-  @MaxLength(100, {
-    message: 'Nome da empresa deve ter no máximo 100 caracteres',
-  })
-  name: string;
-
-  @IsString({ message: 'CEP deve ser uma string' })
-  @IsNotEmpty({ message: 'CEP é obrigatório' })
-  cep: string;
-
-  @IsString({ message: 'Número deve ser uma string' })
-  @IsNotEmpty({ message: 'Número é obrigatório' })
-  @MaxLength(10, { message: 'Número deve ter no máximo 10 caracteres' })
-  number: string;
-}
 
 export class CreateUserDto {
   @ApiProperty({
@@ -81,10 +9,6 @@ export class CreateUserDto {
     enum: UserType,
     enumName: 'UserType',
   })
-  @IsEnum(UserType, {
-    message: 'Tipo de usuário deve ser employee, restaurant ou company',
-  })
-  @IsNotEmpty({ message: 'Tipo de usuário é obrigatório' })
   userType: UserType;
 
   @ApiProperty({
@@ -92,10 +16,6 @@ export class CreateUserDto {
     description: 'Nome do usuário',
     example: 'João da Silva',
   })
-  @IsString({ message: 'Nome deve ser uma string' })
-  @IsNotEmpty({ message: 'Nome é obrigatório' })
-  @MinLength(2, { message: 'Nome deve ter pelo menos 2 caracteres' })
-  @MaxLength(100, { message: 'Nome deve ter no máximo 100 caracteres' })
   name: string;
 
   @ApiProperty({
@@ -103,9 +23,6 @@ export class CreateUserDto {
     description: 'Email do usuário',
     example: 'joao.silva@email.com',
   })
-  @IsEmail({}, { message: 'Email deve ter um formato válido' })
-  @IsNotEmpty({ message: 'Email é obrigatório' })
-  @MaxLength(100, { message: 'Email deve ter no máximo 100 caracteres' })
   email: string;
 
   @ApiProperty({
@@ -113,10 +30,6 @@ export class CreateUserDto {
     description: 'Senha do usuário',
     example: 'senha123',
   })
-  @IsString({ message: 'Senha deve ser uma string' })
-  @IsNotEmpty({ message: 'Senha é obrigatória' })
-  @MinLength(8, { message: 'Senha deve ter pelo menos 8 caracteres' })
-  @MaxLength(100, { message: 'Senha deve ter no máximo 100 caracteres' })
   password: string;
 
   @ApiProperty({
@@ -125,8 +38,6 @@ export class CreateUserDto {
     example: '12345678901',
     required: false,
   })
-  @IsOptional()
-  @IsString({ message: 'CPF deve ser uma string' })
   cpf?: string;
 
   @ApiProperty({
@@ -135,8 +46,6 @@ export class CreateUserDto {
     example: '98765432000188',
     required: false,
   })
-  @IsOptional()
-  @IsString({ message: 'CNPJ deve ser uma string' })
   cnpj?: string;
 
   @ApiProperty({
@@ -149,10 +58,10 @@ export class CreateUserDto {
     },
     required: false,
   })
-  @IsOptional()
-  @ValidateNested()
-  @Type(() => EmployeeDataDto)
-  employee?: EmployeeDataDto;
+  employee?: {
+    name: string;
+    birthDate: string;
+  };
 
   @ApiProperty({
     description:
@@ -165,10 +74,11 @@ export class CreateUserDto {
     },
     required: false,
   })
-  @IsOptional()
-  @ValidateNested()
-  @Type(() => RestaurantDataDto)
-  restaurant?: RestaurantDataDto;
+  restaurant?: {
+    name: string;
+    cep: string;
+    number: string;
+  };
 
   @ApiProperty({
     description:
@@ -181,8 +91,9 @@ export class CreateUserDto {
     },
     required: false,
   })
-  @IsOptional()
-  @ValidateNested()
-  @Type(() => CompanyDataDto)
-  company?: CompanyDataDto;
+  company?: {
+    name: string;
+    cep: string;
+    number: string;
+  };
 }
