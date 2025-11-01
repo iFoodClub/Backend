@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
 import {
+  BadRequestException,
   Body,
   Controller,
   Delete,
@@ -11,6 +12,7 @@ import {
   Put,
   Res,
   UseGuards,
+  UsePipes,
 } from '@nestjs/common';
 import { CreateUserService } from '../../../application/use-cases/create-user.use-cases';
 import { DeleteUserService } from '../../../application/use-cases/delete-user.use-cases';
@@ -38,9 +40,13 @@ import { GetUserByEmailService } from '../../../application/use-cases/get-byemai
 import { UserLoginEntityInterface } from 'src/domain/repositories/user-login.repository.interface';
 import { UpdateUserImageDto } from '../dtos/request/updateUserImage.dto';
 import { UpdateUserPasswordDto } from '../dtos/request/updateUserPassword.dto';
+import { SqlInjectionGuard } from '../../../infrastructure/security/sql-injection.guard';
+import { InputValidationPipe } from '../../../infrastructure/security/input-validation.pipe';
 
 @ApiTags('User API')
 @Controller('user')
+@UseGuards(SqlInjectionGuard)
+@UsePipes(InputValidationPipe)
 export class UserController {
   constructor(
     private readonly createUserService: CreateUserService,
@@ -111,7 +117,8 @@ export class UserController {
 **Exemplo:**
 \`\`\`json
 {
-  "email": "joao.silva@email.com",
+  "name": "João da Silva",
+  "email": "joao.silva+001@example.com",
   "password": "senha123",
   "userType": "employee",
   "profileImage": "https://exemplo.com/joao.jpg",
@@ -134,13 +141,14 @@ export class UserController {
 **Exemplo:**
 \`\`\`json
 {
-  "email": "restaurante@email.com",
+  "name": "Restaurante Saboroso",
+  "email": "restaurante+001@example.com",
   "password": "senha123",
   "userType": "restaurant",
   "profileImage": "https://exemplo.com/restaurante.jpg",
-  "cnpj": "98765432000188",
+  "cnpj": "88937652000101",
   "restaurant": {
-    "cep": "87654321",
+    "cep": "12345678",
     "rua": "Rua das Flores",
     "cidade": "São Paulo",
     "estado": "SP",
@@ -159,11 +167,12 @@ export class UserController {
 **Exemplo:**
 \`\`\`json
 {
-  "email": "empresa@email.com",
+  "name": "Empresa XYZ Ltda",
+  "email": "empresa.xyz+003@example.com",
   "password": "senha123",
   "userType": "company",
   "profileImage": "https://exemplo.com/empresa.jpg",
-  "cnpj": "12345678000199",
+  "cnpj": "88937652000101",
   "company": {
     "cep": "12345678",
     "number": "100",
@@ -186,7 +195,8 @@ export class UserController {
           summary: 'Criar funcionário',
           description: 'Exemplo para criar um funcionário',
           value: {
-            email: 'joao.silva@email.com',
+            name: 'João da Silva',
+            email: 'joao.silva+001@example.com',
             password: 'senha123',
             userType: 'employee',
             profileImage: 'https://exemplo.com/joao.jpg',
@@ -203,13 +213,14 @@ export class UserController {
           summary: 'Criar restaurante',
           description: 'Exemplo para criar um restaurante',
           value: {
-            email: 'restaurante@email.com',
+            name: 'Restaurante Saboroso',
+            email: 'restaurante+001@example.com',
             password: 'senha123',
             userType: 'restaurant',
             profileImage: 'https://exemplo.com/restaurante.jpg',
-            cnpj: '98765432000188',
+            cnpj: '88937652000101',
             restaurant: {
-              cep: '87654321',
+              cep: '12345678',
               rua: 'Rua das Flores',
               cidade: 'São Paulo',
               estado: 'SP',
@@ -222,14 +233,16 @@ export class UserController {
           summary: 'Criar empresa',
           description: 'Exemplo para criar uma empresa',
           value: {
-            email: 'empresa@email.com',
+            name: 'Empresa XYZ Ltda',
+            email: 'empresa.xyz+003@example.com',
             password: 'senha123',
             userType: 'company',
             profileImage: 'https://exemplo.com/empresa.jpg',
-            cnpj: '12345678000199',
+            cnpj: '88937652000101',
             company: {
               cep: '12345678',
               number: '100',
+              restaurantId: null,
             },
           },
         },
@@ -250,12 +263,73 @@ export class UserController {
     @Body() user: UserInterface,
     @Res() res: Response,
   ): Promise<void> {
-    const { email, password, userType, name, profileImage } = user;
-    if (!(email && password && userType && name && profileImage)) {
-      throw new Error('Todos os campos são obrigatórios');
+    try {
+      // Log para debug (remover em produção)
+      console.log('Dados recebidos:', JSON.stringify(user, null, 2));
+      
+      const { email, password, userType, name, profileImage } = user;
+      
+      // Validação básica com mensagens específicas para cada campo
+      const missingFields: string[] = [];
+      if (!email) missingFields.push('email');
+      if (!password) missingFields.push('password');
+      if (!userType) missingFields.push('userType');
+      if (!name) missingFields.push('name');
+      if (!profileImage) missingFields.push('profileImage');
+      
+      if (missingFields.length > 0) {
+        res.status(400).json({
+          success: false,
+          message: `Os seguintes campos são obrigatórios e estão faltando: ${missingFields.join(', ')}`,
+          receivedFields: Object.keys(user),
+        });
+        return;
+      }
+
+      // Validação específica por tipo de usuário
+      if (userType === 'employee') {
+        if (!user.cpf || !user.employee || !user.employee.birthDate || !user.company || !user.company.id) {
+          res.status(400).json({
+            success: false,
+            message: 'Para funcionário (employee), os campos cpf, employee.birthDate e company.id são obrigatórios',
+          });
+          return;
+        }
+      } else if (userType === 'company') {
+        if (!user.cnpj || !user.company || !user.company.cep || !user.company.number) {
+          res.status(400).json({
+            success: false,
+            message: 'Para empresa (company), os campos cnpj, company.cep e company.number são obrigatórios',
+          });
+          return;
+        }
+      } else if (userType === 'restaurant') {
+        if (!user.cnpj || !user.restaurant || !user.restaurant.cep || !user.restaurant.rua || 
+            !user.restaurant.cidade || !user.restaurant.estado || !user.restaurant.number) {
+          res.status(400).json({
+            success: false,
+            message: 'Para restaurante (restaurant), os campos cnpj, restaurant.cep, restaurant.rua, restaurant.cidade, restaurant.estado e restaurant.number são obrigatórios',
+          });
+          return;
+        }
+      }
+
+      await this.createUserService.execute(user);
+      res.status(201).send();
+    } catch (error) {
+      if (error instanceof BadRequestException) {
+        res.status(400).json({
+          success: false,
+          message: error.message,
+        });
+      } else {
+        console.error('Erro ao criar usuário:', error);
+        res.status(500).json({
+          success: false,
+          message: error?.message || 'Erro interno do servidor',
+        });
+      }
     }
-    await this.createUserService.execute(user);
-    res.send();
   }
 
   @Put('image/:id')
