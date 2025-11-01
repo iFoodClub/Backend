@@ -1,4 +1,4 @@
-import { ApiProperty } from "@nestjs/swagger";
+import { ApiProperty } from '@nestjs/swagger';
 
 export class CreateDishDto {
   @ApiProperty({
@@ -18,7 +18,8 @@ export class CreateDishDto {
   @ApiProperty({
     description: 'Description of the dish',
     type: String,
-    example: 'A classic Italian pasta dish made with eggs, cheese, pancetta, and pepper.',
+    example:
+      'A classic Italian pasta dish made with eggs, cheese, pancetta, and pepper.',
   })
   description: string;
 
@@ -32,7 +33,8 @@ export class CreateDishDto {
   @ApiProperty({
     description: 'Image of the dish',
     type: String,
-    example: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRLgvmB2VTV_c3jF2jr9TJqJlZunjoWldt_YA&s',
+    example:
+      'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRLgvmB2VTV_c3jF2jr9TJqJlZunjoWldt_YA&s',
   })
   image: string;
 }

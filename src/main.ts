@@ -14,7 +14,11 @@ async function bootstrap() {
   app.enableCors();
 
   // Configurando validação global
-  app.useGlobalPipes(new ValidationPipe());
+  app.useGlobalPipes(new ValidationPipe({
+    whitelist: false, // Não remove propriedades sem decorators (necessário para endpoints sem DTO)
+    forbidNonWhitelisted: false, // Não bloqueia se houver propriedades extras
+    transform: true, // Transforma o payload para o tipo esperado
+  }));
 
   // Configuração do Swagger
   const config = new DocumentBuilder()
