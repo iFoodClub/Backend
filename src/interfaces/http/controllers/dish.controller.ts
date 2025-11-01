@@ -32,6 +32,7 @@ import { ListDishAverageRatingDtoResponse } from 'src/interfaces/http/dtos/respo
 import { JwtAuthGuard } from 'src/infrastructure/guards/jwt-auth.guard';
 import { UploadAuthorizationGuard } from 'src/infrastructure/guards/upload-authorization.guard';
 import { UploadOwnershipGuard } from 'src/infrastructure/guards/upload-ownership.guard';
+import { ApiBearerAuth } from '@nestjs/swagger';
 
 @ApiTags('Dish API')
 @Controller('Dish')
@@ -137,6 +138,7 @@ export class DishController {
   }
 
   @UseGuards(JwtAuthGuard, UploadAuthorizationGuard, UploadOwnershipGuard)
+  @ApiBearerAuth('JWT-auth')
   @Put(':id')
   @ApiParam({
     name: 'id',
@@ -197,6 +199,7 @@ export class DishController {
   }
 
   @UseGuards(JwtAuthGuard, UploadAuthorizationGuard, UploadOwnershipGuard)
+  @ApiBearerAuth('JWT-auth')
   @Delete(':id')
   @ApiParam({
     name: 'id',

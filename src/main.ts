@@ -14,16 +14,20 @@ async function bootstrap() {
   app.enableCors();
 
   // Configurando validação global
-  app.useGlobalPipes(new ValidationPipe({
-    whitelist: false, // Não remove propriedades sem decorators (necessário para endpoints sem DTO)
-    forbidNonWhitelisted: false, // Não bloqueia se houver propriedades extras
-    transform: true, // Transforma o payload para o tipo esperado
-  }));
+  app.useGlobalPipes(
+    new ValidationPipe({
+      whitelist: false, // Não remove propriedades sem decorators (necessário para endpoints sem DTO)
+      forbidNonWhitelisted: false, // Não bloqueia se houver propriedades extras
+      transform: true, // Transforma o payload para o tipo esperado
+    }),
+  );
 
   // Configuração do Swagger
   const config = new DocumentBuilder()
     .setTitle('Food Club API')
-    .setDescription('API do sistema Food Club - Gerenciamento de restaurantes e pedidos')
+    .setDescription(
+      'API do sistema Food Club - Gerenciamento de restaurantes e pedidos',
+    )
     .setVersion('1.0')
     .addTag('auth', 'Endpoints de autenticação')
     .addTag('users', 'Gerenciamento de usuários')
@@ -44,7 +48,11 @@ async function bootstrap() {
     .build();
 
   const document = SwaggerModule.createDocument(app, config, {
-    extraModels: [CreateEmployeeUserDto, CreateRestaurantUserDto, CreateCompanyUserDto]
+    extraModels: [
+      CreateEmployeeUserDto,
+      CreateRestaurantUserDto,
+      CreateCompanyUserDto,
+    ],
   });
   SwaggerModule.setup('api', app, document, {
     swaggerOptions: {
@@ -54,7 +62,9 @@ async function bootstrap() {
 
   await app.listen(port);
   console.log(`Aplicação rodando na porta ${port}`);
-  console.log(`Documentação Swagger disponível em: http://localhost:${port}/api`);
+  console.log(
+    `Documentação Swagger disponível em: http://localhost:${port}/api`,
+  );
 }
 
-bootstrap();
+void bootstrap();

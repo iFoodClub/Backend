@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { Inject } from '@nestjs/common';
 import { EmployeeRepository } from '../../infrastructure/database/repositories/employee.repository';
@@ -24,7 +25,15 @@ export class ListWeeklyOrdersByCompanyService {
   ) {}
 
   private getCurrentDayOfWeek(): DayOfWeek {
-    const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+    const days = [
+      'Sunday',
+      'Monday',
+      'Tuesday',
+      'Wednesday',
+      'Thursday',
+      'Friday',
+      'Saturday',
+    ];
     const today = new Date().getDay();
     return days[today] as DayOfWeek;
   }
@@ -96,4 +105,4 @@ export class ListWeeklyOrdersByCompanyService {
       employees: result,
     };
   }
-} 
+}
