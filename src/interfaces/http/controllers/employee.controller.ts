@@ -152,7 +152,7 @@ export class EmployeeController {
   }
 
   @Delete(':id')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, SqlInjectionGuard)
   @ApiBearerAuth('JWT-auth')
   @ApiParam({
     name: 'id',
@@ -181,7 +181,7 @@ export class EmployeeController {
       return;
     }
 
-    this.deleteEmployeeService.execute(Number(id));
+    await this.deleteEmployeeService.execute(Number(id));
     res.status(200).json({
       success: true,
       message: 'Funcionário deletado com sucesso',
