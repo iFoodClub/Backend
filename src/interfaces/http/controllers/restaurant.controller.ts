@@ -6,7 +6,7 @@ import { UpdateRestaurantService } from '../../../application/use-cases/update-r
 import { DeleteRestaurantService } from '../../../application/use-cases/delete-restaurant.use-cases';
 import { Response } from 'express';
 import { RestaurantInterface } from 'src/domain/models/restaurant.model';
-import { ApiBody, ApiExtraModels, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { ApiBody, ApiExtraModels, ApiParam, ApiResponse, ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 import { ListRestaurantDtoResponse } from 'src/interfaces/http/dtos/response/listRestaurant.dto';
 import { Http404 } from 'src/interfaces/http/dtos/response/http404';
 import { CreateRestaurantDto } from 'src/interfaces/http/dtos/request/createRestaurant.dto';
@@ -25,10 +25,15 @@ import { GetOrderProgressUseCase } from 'src/application/use-cases/get-order-pro
 import { UpdateIndividualOrderStatusDto } from 'src/interfaces/http/dtos/request/update-individual-order-status.dto';
 import { UpdateCompanyOrderStatusDto } from 'src/interfaces/http/dtos/request/update-company-order-status.dto';
 import { OrderProgressDto } from 'src/interfaces/http/dtos/response/order-progress.dto';
+import { SqlInjectionGuard } from '../../../infrastructure/security/sql-injection.guard';
+import { InputValidationPipe } from '../../../infrastructure/security/input-validation.pipe';
+import { JwtAuthGuard } from '../../../infrastructure/guards/jwt-auth.guard';
 
 @ApiTags('Restaurant API')
 @ApiExtraModels(RestaurantDetailDtoResponse, RestaurantDetailDishDto, RestaurantDetailRatingDto, OrderProgressDto)
 @Controller('Restaurant')
+@UseGuards(SqlInjectionGuard)
+@UsePipes(InputValidationPipe)
 export class RestaurantController {
   constructor(
     private listRestaurantService: ListRestaurantService,
@@ -163,6 +168,25 @@ export class RestaurantController {
   }
 
   @Delete(':id')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth('JWT-auth')
+  @ApiParam({
+    name: 'id',
+    description: 'ID do restaurante',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Restaurante deletado com sucesso',
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Não autorizado',
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Restaurante não encontrado',
+    type: Http404,
+  })
   async delete(@Param('id') id: string, @Res() res: Response): Promise<void> {
     const restaurant = await this.getRestaurantByIdService.execute(Number(id));
     if (!restaurant) {
@@ -172,12 +196,12 @@ export class RestaurantController {
       });
       return;
     }
+    
+    await this.deleteRestaurantService.execute(Number(id));
     res.status(200).json({
       success: true,
       message: 'Restaurante deletado com sucesso',
     });
-    
-    this.deleteRestaurantService.execute(Number(id));
   }
 
   @Get(':id/orders')

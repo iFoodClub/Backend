@@ -9,9 +9,10 @@ import { DeleteEmployeeService } from 'src/application/use-cases/delete-employee
 import { GetEmployeeByIdService } from 'src/application/use-cases/get-employee-byid.use-cases';
 import { ListEmployeesService } from 'src/application/use-cases/list-employees.use-cases';
 import { UpdateEmployeeService } from 'src/application/use-cases/update-employee.use-cases';
+import { AuthModule } from './auth.module';
 
 @Module({
-  imports: [DatabaseModule],
+  imports: [DatabaseModule, AuthModule],
   controllers: [EmployeeController],
   providers: [
     ...employeeProvider,

@@ -8,7 +8,7 @@ import { DeleteEmployeeService } from '../../../application/use-cases/delete-emp
 import { Response } from 'express';
 import { EmployeeEntityInterface } from 'src/domain/repositories/employee.repository.interface';
 import { ListEmployeesService } from '../../../application/use-cases/list-employees.use-cases';
-import { ApiBody, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { ApiBody, ApiParam, ApiResponse, ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 import { ListEmployeeDtoResponse } from 'src/interfaces/http/dtos/response/listEmployee.dto';
 import { CreateEmployeeDto } from 'src/interfaces/http/dtos/request/createEmployee.dto';
 import { Http400 } from 'src/interfaces/http/dtos/response/http400';
@@ -16,6 +16,7 @@ import { Http404 } from 'src/interfaces/http/dtos/response/http404';
 import { SqlInjectionGuard } from '../../../infrastructure/security/sql-injection.guard';
 import { InputValidationPipe } from '../../../infrastructure/security/input-validation.pipe';
 import { ValidateId, SanitizeInput } from '../../../infrastructure/security/validation.decorators';
+import { JwtAuthGuard } from '../../../infrastructure/guards/jwt-auth.guard';
 
 @ApiTags('Employee API')
 @Controller('employee')
@@ -151,6 +152,8 @@ export class EmployeeController {
   }
 
   @Delete(':id')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth('JWT-auth')
   @ApiParam({
     name: 'id',
     description: 'ID do funcionário',
@@ -158,6 +161,10 @@ export class EmployeeController {
   @ApiResponse({
     status: 200,
     description: 'Funcionário deletado com sucesso',
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Não autorizado',
   })
   @ApiResponse({
     status: 404,
