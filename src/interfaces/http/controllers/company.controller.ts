@@ -183,7 +183,7 @@ export class CompanyController {
   }
 
   @Delete(':id')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, SqlInjectionGuard)
   @ApiBearerAuth('JWT-auth')
   @ApiParam({
     name: 'id',
@@ -211,7 +211,7 @@ export class CompanyController {
       });
       return;
     }
-    this.deleteCompanyService.execute(Number(id));
+    await this.deleteCompanyService.execute(Number(id));
     res.status(200).json({
       success: true,
       message: 'Empresa deletada com sucesso',

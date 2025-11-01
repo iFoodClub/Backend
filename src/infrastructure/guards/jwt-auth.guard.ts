@@ -1,17 +1,20 @@
-import { Injectable, ExecutionContext, UnauthorizedException } from '@nestjs/common';
+import {
+  Injectable,
+  ExecutionContext,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 
 @Injectable()
 export class JwtAuthGuard extends AuthGuard('jwt') {
-  canActivate(context: ExecutionContext) {
-    // Retorna a Promise corretamente
-    return super.canActivate(context);
+  canActivate(context: ExecutionContext): Promise<boolean> {
+    return super.canActivate(context) as Promise<boolean>;
   }
 
-  handleRequest(err: any, user: any, info: any) {
+  handleRequest(err: any, user: any) {
     if (err || !user) {
       throw err || new UnauthorizedException('Acesso não autorizado');
     }
     return user;
   }
-} 
+}
