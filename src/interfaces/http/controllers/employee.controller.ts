@@ -13,7 +13,7 @@ import {
 } from '@nestjs/common';
 
 import { GetEmployeeByIdService } from '../../../application/use-cases/get-employee-byid.use-cases';
-import { EmployeeInterface } from 'src/domain/models/employee.model';
+import { EmployeeInterface, IEmployeePopulate } from 'src/domain/models/employee.model';
 import { CreateEmployeeService } from '../../../application/use-cases/create-employee.use-cases';
 import { UpdateEmployeeService } from '../../../application/use-cases/update-employee.use-cases';
 import { DeleteEmployeeService } from '../../../application/use-cases/delete-employee.use-cases';
@@ -61,7 +61,7 @@ export class EmployeeController {
     status: 500,
     description: 'Erro interno do servidor',
   })
-  async list(): Promise<any[]> {
+  async list(): Promise<IEmployeePopulate[]> {
     const employeeList = await this.listEmployeesService.execute();
 
     return employeeList;
@@ -84,7 +84,7 @@ export class EmployeeController {
   async getById(
     @Param('id') id: string,
     @Res() res: Response,
-  ): Promise<EmployeeEntityInterface> {
+  ): Promise<IEmployeePopulate> {
     const employee = await this.getEmployeeByIdService.execute(Number(id));
     if (!employee) {
       res.status(404).json({
@@ -202,7 +202,7 @@ export class EmployeeController {
   }
 
   @Delete(':id')
-  @UseGuards(JwtAuthGuard, UploadAuthorizationGuard, UploadOwnershipGuard)
+  @UseGuards(JwtAuthGuard)
   @ApiBearerAuth('JWT-auth')
   @ApiParam({
     name: 'id',

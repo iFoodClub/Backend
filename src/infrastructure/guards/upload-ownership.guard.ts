@@ -220,7 +220,7 @@ export class UploadOwnershipGuard implements CanActivate {
             throw new NotFoundException('Funcionário não encontrado');
           }
 
-          if (employee.companyId !== user.companyId) {
+          if (employee.company.id !== user.companyId) {
             throw new ForbiddenException(
               'Este funcionário não pertence à sua empresa',
             );
