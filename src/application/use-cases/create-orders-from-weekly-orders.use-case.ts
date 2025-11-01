@@ -1,4 +1,4 @@
-import { Inject, Injectable, NotFoundException } from '@nestjs/common';
+import { Inject, Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { CompanyRepository } from '../../infrastructure/database/repositories/company.repository';
 import { EmployeeRepository } from '../../infrastructure/database/repositories/employee.repository';
 import { EmployeeWeeklyOrdersRepository } from '../../infrastructure/database/repositories/employee-weekly-orders.repository';
@@ -6,7 +6,7 @@ import { IndividualOrderRepository } from '../../infrastructure/database/reposit
 import { CompanyOrderRepository } from '../../infrastructure/database/repositories/company-order.repository';
 import { OrderItemRepository } from '../../infrastructure/database/repositories/order-item.repository';
 import { DishRepository } from '../../infrastructure/database/repositories/dish.repository';
-import { IndividualOrderStatus } from '../../domain/repositories/individual-order.repository.interface';
+import { IndividualOrderStatus, IndividualOrderEntityInterface } from '../../domain/repositories/individual-order.repository.interface';
 import { CompanyOrderStatus } from '../../domain/repositories/company-order.repository.interface';
 import { DayOfWeek } from '../../domain/repositories/employee-weekly-orders.repository.interface';
 
@@ -47,10 +47,33 @@ export class CreateOrdersFromWeeklyOrdersUseCase {
     }
 
     const currentDay = this.getCurrentDayOfWeek();
+    
+    // Validar se TODOS os funcionários têm pedidos semanais preenchidos para o dia atual
+    const employeesWithoutWeeklyOrder: string[] = [];
+    
+    for (const employee of employees) {
+      const weeklyOrder = await this.employeeWeeklyOrdersRepository.findByEmployeeAndDay(employee.id, currentDay);
+      
+      if (!weeklyOrder || !weeklyOrder.orderItemId) {
+        employeesWithoutWeeklyOrder.push(employee.name || `Funcionário ID ${employee.id}`);
+      }
+    }
+
+    // Se algum funcionário não tiver pedido preenchido, retornar erro
+    if (employeesWithoutWeeklyOrder.length > 0) {
+      throw new BadRequestException(
+        `Nem todos os funcionários preencheram seus pedidos semanais para ${currentDay}. ` +
+        `Funcionários sem pedido: ${employeesWithoutWeeklyOrder.join(', ')}`
+      );
+    }
+
+    // Se todos têm pedidos, criar os pedidos individuais
     let ordersCreated = 0;
+    let restaurantId: number | null = null;
+    const createdOrderIds: number[] = [];
 
     for (const employee of employees) {
-      // Buscar apenas os pedidos do dia atual
+      // Buscar os pedidos do dia atual (já validado que existe)
       const weeklyOrder = await this.employeeWeeklyOrdersRepository.findByEmployeeAndDay(employee.id, currentDay);
       
       if (weeklyOrder && weeklyOrder.orderItemId) {
@@ -58,44 +81,58 @@ export class CreateOrdersFromWeeklyOrdersUseCase {
         if (orderItem && orderItem.dishId) {
           const dish = await this.dishRepository.getById(orderItem.dishId);
           if (dish) {
+            // Guardar o restaurantId do primeiro prato encontrado
+            if (!restaurantId) {
+              restaurantId = dish.restaurantId;
+            }
+
             // Criar pedido individual
-            const individualOrder = await this.individualOrderRepository.create({
+            // Não incluir companyOrderId no create, será atualizado depois
+            const orderData: Omit<IndividualOrderEntityInterface, 'id'> = {
               employeeId: employee.id,
+              companyId: companyId,
+              restaurantId: dish.restaurantId,
               dishId: dish.id,
               status: IndividualOrderStatus.PREPARING,
-              companyOrderId: null, // Será atualizado quando o pedido da empresa for criado
-            });
+            };
+            const createdOrder = await this.individualOrderRepository.create(orderData);
 
+            createdOrderIds.push(createdOrder.id);
             ordersCreated++;
           }
         }
       }
     }
 
-    if (ordersCreated > 0) {
-      // Criar pedido da empresa
-      const companyOrder = await this.companyOrderRepository.create({
-        companyId: companyId,
-        restaurantId: company.restaurantId,
-        status: CompanyOrderStatus.PENDING,
-      });
+    // Verificar se algum pedido foi criado
+    if (ordersCreated === 0) {
+      throw new BadRequestException('Nenhum pedido individual foi criado');
+    }
 
-      // Atualizar os pedidos individuais com o ID do pedido da empresa
-      const pendingOrders = await this.individualOrderRepository.listByCompanyOrderIdNull(companyId);
-      
-      for (const order of pendingOrders) {
-        await this.individualOrderRepository.update({
-          id: order.id,
-          companyOrderId: companyOrder.id,
-          status: IndividualOrderStatus.PREPARING,
-        });
-      }
+    // Validar se temos restaurantId
+    if (!restaurantId && !company.restaurantId) {
+      throw new BadRequestException('Restaurante não identificado para criar o pedido da empresa');
+    }
+
+    // Criar pedido da empresa (já validado que todos têm pedidos)
+    const companyOrder = await this.companyOrderRepository.create({
+      companyId: companyId,
+      restaurantId: restaurantId || company.restaurantId,
+      status: CompanyOrderStatus.PENDING,
+    });
+
+    // Atualizar os pedidos individuais com o ID do pedido da empresa
+    // Usar os IDs dos pedidos criados para garantir que atualizamos os corretos
+    for (const orderId of createdOrderIds) {
+      await this.individualOrderRepository.update({
+        id: orderId,
+        companyOrderId: companyOrder.id,
+        status: IndividualOrderStatus.PREPARING,
+      });
     }
 
     return {
-      message: ordersCreated > 0 
-        ? `Pedidos criados com sucesso baseados nos pedidos semanais de ${currentDay}` 
-        : `Nenhum pedido semanal encontrado para ${currentDay}`,
+      message: `Pedidos criados com sucesso baseados nos pedidos semanais de ${currentDay}`,
       ordersCreated,
       currentDay,
     };

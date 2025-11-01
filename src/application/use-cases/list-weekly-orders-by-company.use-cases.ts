@@ -50,9 +50,10 @@ export class ListWeeklyOrdersByCompanyService {
     for (const employee of employees) {
       // Buscar apenas os pedidos do dia atual
       const employeeWeeklyOrder = await this.employeeWeeklyOrdersRepository.findByEmployeeAndDay(employee.id, currentDay);
-      const weeklyOrders = [];
-
+      
+      // Só incluir funcionários que têm pedido marcado para o dia atual
       if (employeeWeeklyOrder && employeeWeeklyOrder.orderItemId) {
+        const weeklyOrders = [];
         const orderItem = await this.orderItemRepository.findByPk(employeeWeeklyOrder.orderItemId);
         if (orderItem && orderItem.dishId) {
           const dish = await this.dishRepository.getById(orderItem.dishId);
@@ -74,13 +75,16 @@ export class ListWeeklyOrdersByCompanyService {
             });
           }
         }
-      }
 
-      result.push({
-        id: employee.id,
-        name: employee.name,
-        weeklyOrders,
-      });
+        // Só adiciona ao resultado se tiver pedido válido
+        if (weeklyOrders.length > 0) {
+          result.push({
+            id: employee.id,
+            name: employee.name,
+            weeklyOrders,
+          });
+        }
+      }
     }
 
     return {

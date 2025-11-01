@@ -52,14 +52,14 @@ export class IndividualOrderEntity extends Model {
   @Column({
     type: DataType.INTEGER,
     allowNull: true,
-    field: 'companyid',
+    field: 'companyId',
   })
   companyId: number;
 
   @Column({
     type: DataType.INTEGER,
     allowNull: true,
-    field: 'restaurantid',
+    field: 'restaurantId',
   })
   restaurantId: number;
 
