@@ -194,9 +194,8 @@ export class EmployeeController {
     res.status(200).json(user);
   }
 
-  @UseGuards(JwtAuthGuard, UploadAuthorizationGuard, UploadOwnershipGuard)
   @Delete(':id')
-  @UseGuards(JwtAuthGuard, SqlInjectionGuard)
+  @UseGuards(JwtAuthGuard)
   @ApiBearerAuth('JWT-auth')
   @ApiParam({
     name: 'id',
