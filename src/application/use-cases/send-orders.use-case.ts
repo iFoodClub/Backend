@@ -15,8 +15,10 @@ export class SendOrdersUseCase {
       if (!order) {
         throw new NotFoundException(`Pedido com ID ${orderId} não encontrado.`);
       }
-      
-      await this.companyOrderRepository.updateStatus(orderId, CompanyOrderStatus.DELIVERED);
+      await this.companyOrderRepository.updateStatus(
+        orderId,
+        CompanyOrderStatus.DELIVERED,
+      );
     }
   }
-} 
+}

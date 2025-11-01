@@ -3,7 +3,7 @@ import { ApiProperty } from '@nestjs/swagger';
 export class LoginResponseDto {
   @ApiProperty({
     example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
-    description: 'Token JWT para autenticação'
+    description: 'Token JWT para autenticação',
   })
   token: string;
 
@@ -16,9 +16,9 @@ export class LoginResponseDto {
         id: 1,
         name: 'Empresa Exemplo',
         // outros detalhes da empresa
-      }
+      },
     },
-    description: 'Detalhes do usuário logado'
+    description: 'Detalhes do usuário logado',
   })
   userDetails: {
     id: number;

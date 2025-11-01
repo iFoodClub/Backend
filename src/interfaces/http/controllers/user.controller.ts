@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unsafe-member-access */
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
 import {
   BadRequestException,
@@ -31,7 +32,7 @@ import {
 import { ListUserDtoResponse } from 'src/interfaces/http/dtos/response/listUser.dto';
 import { Http400 } from 'src/interfaces/http/dtos/response/http400';
 import { Http404 } from 'src/interfaces/http/dtos/response/http404';
-import { UserInterface } from 'src/domain/models/user.model';
+import { UserInterface, UserType } from 'src/domain/models/user.model';
 import { LoginDto } from 'src/interfaces/http/dtos/request/login.dto';
 import { LoginResponseDto } from 'src/interfaces/http/dtos/response/login.dto';
 import { AuthService } from '../../../application/use-cases/login.use-cases';
@@ -264,11 +265,8 @@ export class UserController {
     @Res() res: Response,
   ): Promise<void> {
     try {
-      // Log para debug (remover em produção)
-      console.log('Dados recebidos:', JSON.stringify(user, null, 2));
-      
       const { email, password, userType, name, profileImage } = user;
-      
+
       // Validação básica com mensagens específicas para cada campo
       const missingFields: string[] = [];
       if (!email) missingFields.push('email');
@@ -276,7 +274,7 @@ export class UserController {
       if (!userType) missingFields.push('userType');
       if (!name) missingFields.push('name');
       if (!profileImage) missingFields.push('profileImage');
-      
+
       if (missingFields.length > 0) {
         res.status(400).json({
           success: false,
@@ -287,28 +285,49 @@ export class UserController {
       }
 
       // Validação específica por tipo de usuário
-      if (userType === 'employee') {
-        if (!user.cpf || !user.employee || !user.employee.birthDate || !user.company || !user.company.id) {
+      if (userType === UserType.EMPLOYEE) {
+        if (
+          !user.cpf ||
+          !user.employee ||
+          !user.employee.birthDate ||
+          !user.company ||
+          !user.company.id
+        ) {
           res.status(400).json({
             success: false,
-            message: 'Para funcionário (employee), os campos cpf, employee.birthDate e company.id são obrigatórios',
+            message:
+              'Para funcionário (employee), os campos cpf, employee.birthDate e company.id são obrigatórios',
           });
           return;
         }
-      } else if (userType === 'company') {
-        if (!user.cnpj || !user.company || !user.company.cep || !user.company.number) {
+      } else if (userType === UserType.COMPANY) {
+        if (
+          !user.cnpj ||
+          !user.company ||
+          !user.company.cep ||
+          !user.company.number
+        ) {
           res.status(400).json({
             success: false,
-            message: 'Para empresa (company), os campos cnpj, company.cep e company.number são obrigatórios',
+            message:
+              'Para empresa (company), os campos cnpj, company.cep e company.number são obrigatórios',
           });
           return;
         }
-      } else if (userType === 'restaurant') {
-        if (!user.cnpj || !user.restaurant || !user.restaurant.cep || !user.restaurant.rua || 
-            !user.restaurant.cidade || !user.restaurant.estado || !user.restaurant.number) {
+      } else if (userType === UserType.RESTAURANT) {
+        if (
+          !user.cnpj ||
+          !user.restaurant ||
+          !user.restaurant.cep ||
+          !user.restaurant.rua ||
+          !user.restaurant.cidade ||
+          !user.restaurant.estado ||
+          !user.restaurant.number
+        ) {
           res.status(400).json({
             success: false,
-            message: 'Para restaurante (restaurant), os campos cnpj, restaurant.cep, restaurant.rua, restaurant.cidade, restaurant.estado e restaurant.number são obrigatórios',
+            message:
+              'Para restaurante (restaurant), os campos cnpj, restaurant.cep, restaurant.rua, restaurant.cidade, restaurant.estado e restaurant.number são obrigatórios',
           });
           return;
         }

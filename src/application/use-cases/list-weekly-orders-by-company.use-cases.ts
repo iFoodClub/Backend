@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { Inject } from '@nestjs/common';
 import { EmployeeRepository } from '../../infrastructure/database/repositories/employee.repository';
@@ -24,7 +25,15 @@ export class ListWeeklyOrdersByCompanyService {
   ) {}
 
   private getCurrentDayOfWeek(): DayOfWeek {
-    const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+    const days = [
+      'Sunday',
+      'Monday',
+      'Tuesday',
+      'Wednesday',
+      'Thursday',
+      'Friday',
+      'Saturday',
+    ];
     const today = new Date().getDay();
     return days[today] as DayOfWeek;
   }
@@ -49,12 +58,18 @@ export class ListWeeklyOrdersByCompanyService {
 
     for (const employee of employees) {
       // Buscar apenas os pedidos do dia atual
-      const employeeWeeklyOrder = await this.employeeWeeklyOrdersRepository.findByEmployeeAndDay(employee.id, currentDay);
-      
+      const employeeWeeklyOrder =
+        await this.employeeWeeklyOrdersRepository.findByEmployeeAndDay(
+          employee.id,
+          currentDay,
+        );
+
       // Só incluir funcionários que têm pedido marcado para o dia atual
       if (employeeWeeklyOrder && employeeWeeklyOrder.orderItemId) {
         const weeklyOrders = [];
-        const orderItem = await this.orderItemRepository.findByPk(employeeWeeklyOrder.orderItemId);
+        const orderItem = await this.orderItemRepository.findByPk(
+          employeeWeeklyOrder.orderItemId,
+        );
         if (orderItem && orderItem.dishId) {
           const dish = await this.dishRepository.getById(orderItem.dishId);
           if (dish) {
@@ -96,4 +111,4 @@ export class ListWeeklyOrdersByCompanyService {
       employees: result,
     };
   }
-} 
+}
