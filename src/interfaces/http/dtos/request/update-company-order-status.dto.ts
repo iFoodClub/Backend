@@ -17,4 +17,4 @@ export class UpdateCompanyOrderStatusDto {
   })
   @IsEnum(CompanyOrderStatus)
   status: CompanyOrderStatus;
-} 
+}

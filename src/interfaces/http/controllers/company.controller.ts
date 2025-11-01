@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, HttpCode, Param, Post, Put, Res } from '@nestjs/common';
+import { Body, Controller, Delete, Get, HttpCode, Param, Post, Put, Res, UseGuards, UsePipes } from '@nestjs/common';
 import { GetCompanyByIdService } from '../../../application/use-cases/get-company-byid.use-cases'
 import { CreateCompanyService } from '../../../application/use-cases/create-company.use-cases';
 import { UpdateCompanyService } from '../../../application/use-cases/update-company.use-cases';
@@ -7,7 +7,7 @@ import { Response } from 'express';
 import { CompanyInterface } from 'src/domain/models/company.model';
 import { CompanyEntityInterface } from 'src/domain/repositories/company.repository.interface';
 import { ListCompaniesService } from '../../../application/use-cases/list-companies.use-cases';
-import { ApiBody, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { ApiBody, ApiParam, ApiResponse, ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 import { ListCompanyDtoResponse } from 'src/interfaces/http/dtos/response/listCompany.dto';
 import { Http404 } from 'src/interfaces/http/dtos/response/http404';
 import { Http400 } from 'src/interfaces/http/dtos/response/http400';
@@ -21,9 +21,15 @@ import { ListWeeklyOrdersByCompanyService } from 'src/application/use-cases/list
 import { CreateOrdersFromWeeklyOrdersUseCase } from 'src/application/use-cases/create-orders-from-weekly-orders.use-case';
 import { CompanyWeeklyOrdersResponse } from 'src/interfaces/http/dtos/response/companyWeeklyOrders.dto';
 import { CreateOrdersFromWeeklyResponse } from 'src/interfaces/http/dtos/response/createOrdersFromWeeklyResponse.dto';
+import { SqlInjectionGuard } from '../../../infrastructure/security/sql-injection.guard';
+import { InputValidationPipe } from '../../../infrastructure/security/input-validation.pipe';
+import { ValidateId, SanitizeInput } from '../../../infrastructure/security/validation.decorators';
+import { JwtAuthGuard } from '../../../infrastructure/guards/jwt-auth.guard';
 
 @ApiTags('Company API')
 @Controller('company')
+@UseGuards(SqlInjectionGuard)
+@UsePipes(InputValidationPipe)
 export class CompanyController {
   constructor(
     private readonly listCompaniesService: ListCompaniesService,
@@ -177,6 +183,8 @@ export class CompanyController {
   }
 
   @Delete(':id')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth('JWT-auth')
   @ApiParam({
     name: 'id',
     description: 'ID da empresa a ser deletada',
@@ -184,6 +192,10 @@ export class CompanyController {
   @ApiResponse({
     status: 200,
     description: 'Empresa deletada com sucesso',
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Não autorizado',
   })
   @ApiResponse({
     status: 404,

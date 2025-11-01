@@ -27,9 +27,10 @@ import { dishProvider } from 'src/infrastructure/providers/dish.provider';
 import { DishRepository } from 'src/infrastructure/database/repositories/dish.repository';
 import { companyOrderProvider } from 'src/infrastructure/providers/company-order.provider';
 import { CompanyOrderRepository } from 'src/infrastructure/database/repositories/company-order.repository';
+import { AuthModule } from './auth.module';
 
 @Module({
-  imports: [DatabaseModule],
+  imports: [DatabaseModule, AuthModule],
   controllers: [CompanyController],
   providers: [
     ...companyProvider,

@@ -27,9 +27,10 @@ import { employeeProvider } from 'src/infrastructure/providers/employee.provider
 import { CompanyRepository } from 'src/infrastructure/database/repositories/company.repository';
 import { EmployeeRepository } from 'src/infrastructure/database/repositories/employee.repository';
 import { DishRepository } from 'src/infrastructure/database/repositories/dish.repository';
+import { AuthModule } from './auth.module';
 
 @Module({
-  imports: [DatabaseModule],
+  imports: [DatabaseModule, AuthModule],
   controllers: [RestaurantController],
   providers: [
     ...restaurantProvider,

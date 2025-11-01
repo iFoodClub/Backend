@@ -19,6 +19,7 @@ import { RestaurantRatingModule } from './interfaces/http/restaurant-rating.modu
 import { RestaurantRatingController } from './interfaces/http/controllers/restaurant-rating.controller';
 import { EmployeeWeeklyOrdersModule } from './interfaces/http/employee-weekly-orders.module';
 import { HealthCheckModule } from './interfaces/http/health-check.module';
+import { SecurityModule } from './infrastructure/security/security.module';
 import { UploadModule } from './interfaces/http/upload.module';
 
 @Module({
@@ -35,6 +36,7 @@ import { UploadModule } from './interfaces/http/upload.module';
     EmployeeWeeklyOrdersModule,
     RestaurantRatingModule,
     HealthCheckModule,
+    SecurityModule,
     UploadModule,
   ],
   controllers: [
