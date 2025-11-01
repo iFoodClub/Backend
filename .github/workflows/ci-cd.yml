@@ -186,43 +186,43 @@ jobs:
           # Cria o changelog estruturado
           {
             echo "changelog<<EOF"
-            echo "# Backend do FoodClub - Versão ${{ needs.version.outputs.new_version }}"
+            echo "# Foodclub Backend - Version ${{ needs.version.outputs.new_version }}"
             echo ""
-            echo "**📅 Data de Release:** $release_date"
+            echo "**📅 Release Date:** $release_date"
             echo "**🌟 Branch:** ${{ github.ref_name }}"
             echo "**💻 Commit:** [\`${{ github.sha }}\`](https://github.com/${{ github.repository }}/commit/${{ github.sha }})"
             echo ""
             
             if [ ! -z "$features" ]; then
-              echo "## ✨ Novas Funcionalidades"
+              echo "## ✨ New Features"
               echo "$features"
               echo ""
             fi
             
             if [ ! -z "$fixes" ]; then
-              echo "## 🐛 Correções de Bugs"
+              echo "## 🐛 Bug Fixes"
               echo "$fixes"
               echo ""
             fi
             
             if [ ! -z "$improvements" ]; then
-              echo "## 🔧 Melhorias e Otimizações"
+              echo "## 🔧 Improvements and Optimizations"
               echo "$improvements"
               echo ""
             fi
             
             if [ ! -z "$docs" ]; then
-              echo "## 📚 Documentação"
+              echo "## 📚 Documentation"
               echo "$docs"
               echo ""
             fi
-            
-            echo "## 🔗 Links Úteis"
-            echo "- [📋 Changelog Completo](https://github.com/${{ github.repository }}/compare/$latest_tag...${{ needs.version.outputs.new_version }})"
-            echo "- [🏗️ Pipeline de Deploy](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})"
+
+            echo "## 🔗 Useful Links"
+            echo "- [📋 Full Changelog](https://github.com/${{ github.repository }}/compare/$latest_tag...${{ needs.version.outputs.new_version }})"
+            echo "- [🏗️ Deployment Pipeline](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})"
             echo ""
             echo "---"
-            echo "*Release gerada automaticamente pelo GitHub Actions*"
+            echo "*Automatic generated release - GitHub Actions*"
             echo "EOF"
           } >> $GITHUB_OUTPUT
       

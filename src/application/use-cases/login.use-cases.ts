@@ -1,3 +1,8 @@
+/* eslint-disable @typescript-eslint/no-unsafe-member-access */
+/* eslint-disable @typescript-eslint/no-unsafe-return */
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
+/* eslint-disable @typescript-eslint/no-unused-vars */
+/* eslint-disable @typescript-eslint/no-unsafe-enum-comparison */
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
@@ -14,27 +19,73 @@ export class AuthService {
     private readonly companyRepository: CompanyRepository,
     private readonly restaurantRepository: RestaurantRepository,
     private readonly employeeRepository: EmployeeRepository,
-    private readonly jwtService: JwtService
+    private readonly jwtService: JwtService,
   ) {}
 
-  async login(email: string, password: string): Promise<{ token: string, userDetails: any }> {
+  async login(
+    email: string,
+    password: string,
+  ): Promise<{ token: string; userDetails: any }> {
     const user = await this.GetUserByEmailService.execute(email);
-    
+
     if (!user) {
-      throw new UnauthorizedException('Credenciais inválidas');
+      throw new UnauthorizedException('Email ou senha inválidos');
     }
 
     const isPasswordValid = await bcrypt.compare(password, user.password);
-    
+
     if (!isPasswordValid) {
-      throw new UnauthorizedException('Credenciais inválidas');
+      throw new UnauthorizedException('Email ou senha inválidos');
     }
 
-    const payload = { 
+    // 🔧 Busca os IDs das entidades relacionadas baseado no userType
+    let companyId: number | undefined;
+    let restaurantId: number | undefined;
+    let employeeId: number | undefined;
+
+    // 🐛 DEBUG: Log antes de buscar IDs
+    console.log('🔍 [Login] Buscando IDs para user:', {
+      userId: user.id,
+      userType: user.userType,
+    });
+
+    switch (user.userType) {
+      case 'company': {
+        const company = await this.companyRepository.findByUserId(user.id);
+        companyId = company?.id;
+        console.log('   - Company encontrada:', company?.id);
+        break;
+      }
+      case 'restaurant': {
+        const restaurant = await this.restaurantRepository.findByUserId(
+          user.id,
+        );
+        restaurantId = restaurant?.id;
+        console.log('   - Restaurant encontrado:', restaurant?.id);
+        console.log('   - Restaurant completo:', restaurant);
+        break;
+      }
+      case 'employee': {
+        const employee = await this.employeeRepository.findByUserId(user.id);
+        employeeId = employee?.id;
+        companyId = employee?.companyId; // Employee também precisa do companyId
+        console.log('   - Employee encontrado:', employee?.id);
+        break;
+      }
+    }
+
+    const payload = {
       sub: user.id,
       email: user.email,
-      userType: user.userType
+      userType: user.userType,
+      companyId,
+      restaurantId,
+      employeeId,
     };
+
+    // 🐛 DEBUG: Log do payload que será colocado no token
+    console.log('🔍 [Login] Payload do token JWT:');
+    console.log('   ', JSON.stringify(payload, null, 2));
 
     const token = this.jwtService.sign(payload);
     const userDetails = await this.getUserDetails(user);
@@ -44,14 +95,14 @@ export class AuthService {
 
   async validateToken(token: string): Promise<number> {
     try {
-      const payload = this.jwtService.verify(token);
+      const payload = await this.jwtService.verify(token);
       return payload.sub;
     } catch (error) {
       throw new UnauthorizedException('Sessão inválida ou expirada');
     }
   }
 
-  logout(token: string): void {
+  logout(_token: string): void {
     // Com JWT, não precisamos mais gerenciar sessões ativamente
     // O token expirará automaticamente
     return;
@@ -59,7 +110,7 @@ export class AuthService {
 
   private async getUserDetails(user: UserInterface) {
     switch (user.userType) {
-      case 'company':
+      case 'company': {
         const company = await this.companyRepository.findByUserId(user.id);
         return {
           id: user.id,
@@ -70,7 +121,8 @@ export class AuthService {
           password: undefined, // Remove a senha dos detalhes retornados
           company,
         };
-      case 'employee':
+      }
+      case 'employee': {
         const employee = await this.employeeRepository.findByUserId(user.id);
         return {
           id: user.id,
@@ -81,8 +133,11 @@ export class AuthService {
           password: undefined,
           employee,
         };
-      case 'restaurant':
-        const restaurant = await this.restaurantRepository.findByUserId(user.id);
+      }
+      case 'restaurant': {
+        const restaurant = await this.restaurantRepository.findByUserId(
+          user.id,
+        );
         return {
           id: user.id,
           email: user.email,
@@ -92,6 +147,7 @@ export class AuthService {
           password: undefined,
           restaurant,
         };
+      }
       default:
         return {
           ...user,

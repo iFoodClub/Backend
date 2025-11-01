@@ -42,6 +42,7 @@ interface RequestUser {
 interface RequestWithUser {
   user: RequestUser;
   method: string;
+  url: string;
   params: {
     folder?: string;
     id?: string;
@@ -62,13 +63,46 @@ export class UploadOwnershipGuard implements CanActivate {
   ) {}
 
   /**
+   * 🔍 Infere a pasta (folder) a partir da URL
+   * Exemplo: /dish/123 -> "dishes"
+   * Exemplo: /Dish/123 -> "dishes" (case-insensitive)
+   */
+  private inferFolderFromUrl(url: string): string | null {
+    const urlLower = url.toLowerCase(); // Converter para minúsculo
+    const urlMap: Record<string, string> = {
+      '/company': 'companies',
+      '/employee': 'users',
+      '/restaurant': 'restaurants',
+      '/dish': 'dishes',
+    };
+
+    for (const [route, folder] of Object.entries(urlMap)) {
+      if (urlLower.includes(route)) {
+        return folder;
+      }
+    }
+
+    return null;
+  }
+
+  /**
    * Método principal que valida se o usuário pode executar a ação
    */
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest<RequestWithUser>();
     const user = request.user;
-    const { folder, id } = request.params;
+    let { folder } = request.params;
+    const { id } = request.params;
     const { key } = request.body || {};
+    const url = request.url;
+
+    console.log('🛡️ [UploadOwnershipGuard] Guard executado!');
+    console.log('   - URL:', url);
+    console.log('   - Method:', request.method);
+    console.log('   - Params:', request.params);
+    console.log('   - folder (params):', folder);
+    console.log('   - id (params):', id);
+    console.log('   - key (body):', key);
 
     // Validação básica
     if (!user) {
@@ -78,17 +112,29 @@ export class UploadOwnershipGuard implements CanActivate {
     // 🎯 CASO 1: DELETE de imagem (baseado na key do S3)
     // Exemplo: DELETE /upload/image com body: { key: "companies/123.jpg" }
     if (key && request.method === 'DELETE') {
+      console.log('   ➡️ Caso 1: DELETE de imagem com key');
       return this.validateDeleteOwnership(key, user);
     }
 
-    // 🎯 CASO 2: UPDATE de entidade (baseado no ID)
-    // Exemplo: PATCH /companies/1 ou POST /companies/1/logo
+    // 🔍 Inferir folder da URL se não estiver nos parâmetros
+    if (!folder && url) {
+      folder = this.inferFolderFromUrl(url);
+      console.log('   ➡️ Folder inferido da URL:', folder);
+    }
+
+    // 🎯 CASO 2: UPDATE/DELETE de entidade (baseado no ID)
+    // Exemplo: PATCH /companies/1 ou DELETE /dish/123
     if (id && folder) {
+      console.log('   ➡️ Caso 2: UPDATE/DELETE com ID e folder');
+      console.log('   - folder:', folder);
+      console.log('   - entityId:', id);
       return this.validateUpdateOwnership(folder, parseInt(id), user);
     }
 
     // 🎯 CASO 3: POST genérico de upload sem ID específico
     // Permitir (será validado no controller posteriormente)
+    console.log('   ➡️ Caso 3: POST genérico - PERMITINDO sem validação');
+    console.log('   ⚠️ ATENÇÃO: Retornando true sem validar!');
     return true;
   }
 
@@ -196,15 +242,37 @@ export class UploadOwnershipGuard implements CanActivate {
 
         if (folder === 'dishes') {
           // ✅ Restaurante atualizando prato que pertence a ele
+
+          // 🐛 DEBUG: Log para identificar o problema
+          console.log('🔍 [UploadOwnershipGuard] Validando ownership de dish:');
+          console.log('   - entityId (dish ID):', entityId);
+          console.log('   - user.restaurantId:', user.restaurantId);
+          console.log('   - user.userType:', user.userType);
+          console.log('   - user completo:', JSON.stringify(user, null, 2));
+
+          if (!user.restaurantId) {
+            throw new ForbiddenException(
+              '❌ restaurantId não encontrado no token JWT. Faça login novamente.',
+            );
+          }
+
           const dish = await this.dishRepository.getById(entityId);
 
           if (!dish) {
             throw new NotFoundException('Prato não encontrado');
           }
 
+          console.log('   - dish.restaurantId:', dish.restaurantId);
+          console.log(
+            '   - Comparação:',
+            dish.restaurantId,
+            '!==',
+            user.restaurantId,
+          );
+
           if (dish.restaurantId !== user.restaurantId) {
             throw new ForbiddenException(
-              'Este prato não pertence ao seu restaurante',
+              `Este prato não pertence ao seu restaurante. Prato pertence ao restaurante ${dish.restaurantId}, você é do restaurante ${user.restaurantId}`,
             );
           }
           return true;
