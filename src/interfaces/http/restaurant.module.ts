@@ -28,6 +28,7 @@ import { CompanyRepository } from 'src/infrastructure/database/repositories/comp
 import { EmployeeRepository } from 'src/infrastructure/database/repositories/employee.repository';
 import { DishRepository } from 'src/infrastructure/database/repositories/dish.repository';
 import { AuthModule } from './auth.module';
+import { UploadOwnershipGuard } from 'src/infrastructure/guards/upload-ownership.guard';
 
 @Module({
   imports: [DatabaseModule, AuthModule],
@@ -46,10 +47,11 @@ import { AuthModule } from './auth.module';
     CompanyRepository,
     EmployeeRepository,
     DishRepository,
+    UploadOwnershipGuard,
     ListRestaurantService,
-    GetRestaurantByIdService, 
-    CreateRestaurantService, 
-    UpdateRestaurantService, 
+    GetRestaurantByIdService,
+    CreateRestaurantService,
+    UpdateRestaurantService,
     DeleteRestaurantService,
     ListDishesByRestaurantService,
     ListOrdersByRestaurantUseCase,
@@ -57,15 +59,15 @@ import { AuthModule } from './auth.module';
     CreateIndividualOrderUseCase,
     UpdateIndividualOrderStatusUseCase,
     UpdateCompanyOrderStatusUseCase,
-    GetOrderProgressUseCase
+    GetOrderProgressUseCase,
   ],
   exports: [
     RestaurantRepository,
     RestaurantRatingRepository,
     ListRestaurantService,
-    GetRestaurantByIdService, 
-    CreateRestaurantService, 
-    UpdateRestaurantService, 
+    GetRestaurantByIdService,
+    CreateRestaurantService,
+    UpdateRestaurantService,
     DeleteRestaurantService,
     ListDishesByRestaurantService,
     ListOrdersByRestaurantUseCase,
@@ -73,7 +75,7 @@ import { AuthModule } from './auth.module';
     CreateIndividualOrderUseCase,
     UpdateIndividualOrderStatusUseCase,
     UpdateCompanyOrderStatusUseCase,
-    GetOrderProgressUseCase
-  ]
+    GetOrderProgressUseCase,
+  ],
 })
 export class RestaurantModule {}

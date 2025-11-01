@@ -1,4 +1,4 @@
-import { DishEntity } from "../database/entities/dish.entity";
+import { DishEntity } from '../database/entities/dish.entity';
 import { DishRepository } from '../database/repositories/dish.repository';
 
 export const dishProvider = [

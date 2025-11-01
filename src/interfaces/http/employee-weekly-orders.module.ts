@@ -25,6 +25,6 @@ import { GetWeeklyOrdersByEmployeeService } from 'src/application/use-cases/get-
     CreateOrUpdateWeeklyOrderService,
     GetWeeklyOrdersByEmployeeService,
     DeleteWeeklyOrderService,
-  ]
+  ],
 })
-export class EmployeeWeeklyOrdersModule {} 
+export class EmployeeWeeklyOrdersModule {}

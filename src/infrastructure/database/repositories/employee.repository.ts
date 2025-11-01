@@ -23,7 +23,7 @@ export class EmployeeRepository {
       ],
     });
 
-    return employees.map(employee => ({
+    return employees.map((employee) => ({
       id: employee.id,
       userId: employee.userId,
       companyId: employee.companyId,
@@ -34,7 +34,9 @@ export class EmployeeRepository {
       email: employee.user?.email || '',
     }));
   }
-  async create(employee: Omit<EmployeeEntityInterface, 'id'>): Promise<EmployeeEntityInterface> {
+  async create(
+    employee: Omit<EmployeeEntityInterface, 'id'>,
+  ): Promise<EmployeeEntityInterface> {
     return await this.employeeEntity.create(employee);
   }
 
@@ -47,8 +49,7 @@ export class EmployeeRepository {
   }
 
   async getById(id: number): Promise<EmployeeEntityInterface | null> {
-    return await this.employeeEntity.findByPk(id, {
-    });
+    return await this.employeeEntity.findByPk(id, {});
   }
   async getByUserId(userId: number): Promise<EmployeeEntityInterface | null> {
     return await this.employeeEntity.findOne({ where: { userId } });
@@ -68,10 +69,18 @@ export class EmployeeRepository {
           attributes: ['profileImage', 'email'],
         },
       ],
-      attributes: ['id', 'userId', 'companyId', 'name', 'cpf', 'birthDate', 'vacation'],
+      attributes: [
+        'id',
+        'userId',
+        'companyId',
+        'name',
+        'cpf',
+        'birthDate',
+        'vacation',
+      ],
     });
 
-    return employees.map(employee => ({
+    return employees.map((employee) => ({
       id: employee.id,
       userId: employee.userId,
       companyId: employee.companyId,

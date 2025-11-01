@@ -11,6 +11,13 @@ import { GetDishByIdService } from 'src/application/use-cases/get-dish-byid.use-
 import { ListDishesByRestaurantService } from 'src/application/use-cases/list-dishes-by-restaurant.use-cases';
 import { ListDishesService } from 'src/application/use-cases/list-dishes.use-cases';
 import { UpdateDishService } from 'src/application/use-cases/update-dish.use-cases';
+import { UploadOwnershipGuard } from 'src/infrastructure/guards/upload-ownership.guard';
+import { RestaurantRepository } from 'src/infrastructure/database/repositories/restaurant.repository';
+import { restaurantProvider } from 'src/infrastructure/providers/restaurant.provider';
+import { CompanyRepository } from 'src/infrastructure/database/repositories/company.repository';
+import { companyProvider } from 'src/infrastructure/providers/company.provider';
+import { EmployeeRepository } from 'src/infrastructure/database/repositories/employee.repository';
+import { employeeProvider } from 'src/infrastructure/providers/employee.provider';
 
 @Module({
   imports: [DatabaseModule],
@@ -18,22 +25,29 @@ import { UpdateDishService } from 'src/application/use-cases/update-dish.use-cas
   providers: [
     ...dishProvider,
     ...dishRatingProvider,
-    ListDishesService, 
-    GetDishByIdService, 
-    CreateDishService, 
-    UpdateDishService, 
+    ...restaurantProvider,
+    ...companyProvider,
+    ...employeeProvider,
+    RestaurantRepository,
+    CompanyRepository,
+    EmployeeRepository,
+    ListDishesService,
+    GetDishByIdService,
+    CreateDishService,
+    UpdateDishService,
     DeleteDishService,
     ListDishesByRestaurantService,
-    AverageRatingByRestaurantService
+    AverageRatingByRestaurantService,
+    UploadOwnershipGuard,
   ],
   exports: [
-    ListDishesService, 
-    GetDishByIdService, 
-    CreateDishService, 
-    UpdateDishService, 
+    ListDishesService,
+    GetDishByIdService,
+    CreateDishService,
+    UpdateDishService,
     DeleteDishService,
     ListDishesByRestaurantService,
-    AverageRatingByRestaurantService
-  ]
+    AverageRatingByRestaurantService,
+  ],
 })
 export class DishModule {}
