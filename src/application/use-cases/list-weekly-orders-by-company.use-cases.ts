@@ -82,7 +82,7 @@ export class ListWeeklyOrdersByCompanyService {
                 employee: {
                   id: employee.id,
                   name: employee.name,
-                  profileImage: employeeUser?.profileImage || '',
+                  profileImage: employeeUser?.profileImage,
                 },
                 order: {
                   id: dish.id,
@@ -100,7 +100,7 @@ export class ListWeeklyOrdersByCompanyService {
                   restaurant: {
                     id: restaurant.id,
                     name: restaurant.name,
-                    profileImage: restaurantUser.profileImage || '',
+                    profileImage: restaurantUser.profileImage,
                   },
                   weeklyOrders,
                 });

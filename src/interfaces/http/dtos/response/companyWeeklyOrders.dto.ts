@@ -18,9 +18,10 @@ export class IDRestaurantDto implements IDRestaurant {
 
   @ApiProperty({
     description: 'Imagem de perfil do restaurante',
-    example: 'https://example.com/profile.jpg'
+    example: 'https://example.com/profile.jpg',
+    required: false
   })
-  profileImage: string;
+  profileImage?: string;
 }
 
 export class IDEmployeeDto implements IDEmployee {
@@ -38,9 +39,10 @@ export class IDEmployeeDto implements IDEmployee {
 
   @ApiProperty({
     description: 'Imagem de perfil do funcionário',
-    example: 'https://example.com/profile.jpg'
+    example: 'https://example.com/profile.jpg',
+    required: false
   })
-  profileImage: string;
+  profileImage?: string;
 }
 
 export class IDDishDto implements IDDish {

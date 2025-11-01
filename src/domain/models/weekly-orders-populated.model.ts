@@ -1,13 +1,13 @@
 export interface IDRestaurant {
   id: number;
   name: string;
-  profileImage: string;
+  profileImage?: string;
 }
 
 export interface IDEmployee {
   id: number;
   name: string;
-  profileImage: string;
+  profileImage?: string;
 }
 
 export interface IDDish {
