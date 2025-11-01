@@ -16,14 +16,6 @@ import { Type } from 'class-transformer';
 
 // Classes para validação de objetos aninhados
 export class CompanyDataDto {
-  @IsString({ message: 'Nome da empresa deve ser uma string' })
-  @IsNotEmpty({ message: 'Nome da empresa é obrigatório' })
-  @MinLength(2, { message: 'Nome da empresa deve ter pelo menos 2 caracteres' })
-  @MaxLength(100, {
-    message: 'Nome da empresa deve ter no máximo 100 caracteres',
-  })
-  name: string;
-
   @IsString({ message: 'CEP deve ser uma string' })
   @IsNotEmpty({ message: 'CEP é obrigatório' })
   cep: string;
@@ -53,7 +45,7 @@ export class CreateCompanyUserDto {
   @ApiProperty({
     type: 'string',
     description: 'Nome da empresa',
-    example: 'Empresa ABC Ltda',
+    example: 'Empresa XYZ Ltda',
   })
   @IsString({ message: 'Nome deve ser uma string' })
   @IsNotEmpty({ message: 'Nome é obrigatório' })
@@ -64,7 +56,7 @@ export class CreateCompanyUserDto {
   @ApiProperty({
     type: 'string',
     description: 'Email da empresa',
-    example: 'empresa@email.com',
+    example: 'empresa.xyz+003@example.com',
   })
   @IsEmail({}, { message: 'Email deve ter um formato válido' })
   @IsNotEmpty({ message: 'Email é obrigatório' })
@@ -85,7 +77,7 @@ export class CreateCompanyUserDto {
   @ApiProperty({
     description: 'CNPJ da empresa',
     type: String,
-    example: '12345678000199',
+    example: '88937652000101',
   })
   @IsString({ message: 'CNPJ deve ser uma string' })
   @IsNotEmpty({ message: 'CNPJ é obrigatório' })
@@ -95,7 +87,6 @@ export class CreateCompanyUserDto {
     description: 'Dados específicos da empresa',
     type: 'object',
     example: {
-      name: 'Empresa ABC Ltda',
       cep: '12345678',
       number: '100',
       restaurantId: null,

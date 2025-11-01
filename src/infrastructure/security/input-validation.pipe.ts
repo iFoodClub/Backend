@@ -3,14 +3,18 @@ import { PipeTransform, Injectable, BadRequestException } from '@nestjs/common';
 @Injectable()
 export class InputValidationPipe implements PipeTransform {
   transform(value: any) {
-    // Para objetos, sanitiza recursivamente mas preserva emails e senhas
+    // Para objetos, sanitiza recursivamente mas preserva campos importantes
     if (typeof value === 'object' && value !== null) {
       const sanitized = {};
       for (const key in value) {
         if (value.hasOwnProperty(key)) {
-          // Preserva emails e senhas sem sanitização
-          if ((key === 'email' || key === 'password' || key === 'oldPassword' || key === 'newPassword')) {
-            sanitized[key] = value[key]; // Preserva valor original para emails e senhas
+          // Preserva campos importantes sem sanitização
+          const preservedFields = ['email', 'password', 'oldPassword', 'newPassword', 'name', 'cpf', 'cnpj', 'profileImage'];
+          if (preservedFields.includes(key)) {
+            sanitized[key] = value[key]; // Preserva valor original
+          } else if (key === 'employee' || key === 'company' || key === 'restaurant') {
+            // Para objetos aninhados, preserva também mas valida internamente
+            sanitized[key] = this.transform(value[key]);
           } else {
             sanitized[key] = this.transform(value[key]);
           }

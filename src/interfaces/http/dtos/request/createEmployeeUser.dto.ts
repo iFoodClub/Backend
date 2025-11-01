@@ -16,16 +16,6 @@ import { Type } from 'class-transformer';
 
 // Classes para validação de objetos aninhados
 export class EmployeeDataDto {
-  @IsString({ message: 'Nome do funcionário deve ser uma string' })
-  @IsNotEmpty({ message: 'Nome do funcionário é obrigatório' })
-  @MinLength(2, {
-    message: 'Nome do funcionário deve ter pelo menos 2 caracteres',
-  })
-  @MaxLength(100, {
-    message: 'Nome do funcionário deve ter no máximo 100 caracteres',
-  })
-  name: string;
-
   @IsDateString(
     {},
     { message: 'Data de nascimento deve ter formato válido (YYYY-MM-DD)' },
@@ -65,7 +55,7 @@ export class CreateEmployeeUserDto {
   @ApiProperty({
     type: 'string',
     description: 'Email do funcionário',
-    example: 'joao.silva@email.com',
+    example: 'joao.silva+001@example.com',
   })
   @IsEmail({}, { message: 'Email deve ter um formato válido' })
   @IsNotEmpty({ message: 'Email é obrigatório' })
@@ -96,7 +86,6 @@ export class CreateEmployeeUserDto {
     description: 'Dados específicos do funcionário',
     type: 'object',
     example: {
-      name: 'João da Silva',
       birthDate: '1990-05-10',
     },
   })

@@ -13,16 +13,6 @@ import { Type } from 'class-transformer';
 
 // Classes para validação de objetos aninhados
 export class RestaurantDataDto {
-  @IsString({ message: 'Nome do restaurante deve ser uma string' })
-  @IsNotEmpty({ message: 'Nome do restaurante é obrigatório' })
-  @MinLength(2, {
-    message: 'Nome do restaurante deve ter pelo menos 2 caracteres',
-  })
-  @MaxLength(100, {
-    message: 'Nome do restaurante deve ter no máximo 100 caracteres',
-  })
-  name: string;
-
   @IsString({ message: 'CEP deve ser uma string' })
   @IsNotEmpty({ message: 'CEP é obrigatório' })
   cep: string;
@@ -78,7 +68,7 @@ export class CreateRestaurantUserDto {
   @ApiProperty({
     type: 'string',
     description: 'Email do restaurante',
-    example: 'restaurante@email.com',
+    example: 'restaurante+001@example.com',
   })
   @IsEmail({}, { message: 'Email deve ter um formato válido' })
   @IsNotEmpty({ message: 'Email é obrigatório' })
@@ -99,7 +89,7 @@ export class CreateRestaurantUserDto {
   @ApiProperty({
     description: 'CNPJ do restaurante',
     type: String,
-    example: '98765432000188',
+    example: '88937652000101',
   })
   @IsString({ message: 'CNPJ deve ser uma string' })
   @IsNotEmpty({ message: 'CNPJ é obrigatório' })
@@ -109,8 +99,7 @@ export class CreateRestaurantUserDto {
     description: 'Dados específicos do restaurante',
     type: 'object',
     example: {
-      name: 'Restaurante Saboroso',
-      cep: '87654321',
+      cep: '12345678',
       rua: 'Rua das Flores',
       cidade: 'São Paulo',
       estado: 'SP',
