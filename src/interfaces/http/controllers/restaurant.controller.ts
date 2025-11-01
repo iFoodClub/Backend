@@ -155,6 +155,7 @@ export class RestaurantController {
   }
 
   @UseGuards(JwtAuthGuard, UploadAuthorizationGuard, UploadOwnershipGuard)
+  @ApiBearerAuth('JWT-auth')
   @Put(':id')
   @ApiParam({
     name: 'id',
@@ -246,8 +247,7 @@ export class RestaurantController {
       });
       return;
     }
-    
-    await this.deleteRestaurantService.execute(Number(id));
+    this.deleteRestaurantService.execute(Number(id));
     res.status(200).json({
       success: true,
       message: 'Restaurante deletado com sucesso',
