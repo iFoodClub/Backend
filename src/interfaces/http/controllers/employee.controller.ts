@@ -196,6 +196,7 @@ export class EmployeeController {
 
   @UseGuards(JwtAuthGuard, UploadAuthorizationGuard, UploadOwnershipGuard)
   @Delete(':id')
+  @UseGuards(JwtAuthGuard, SqlInjectionGuard)
   @ApiBearerAuth('JWT-auth')
   @ApiParam({
     name: 'id',

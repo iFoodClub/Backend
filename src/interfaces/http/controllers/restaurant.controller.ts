@@ -218,7 +218,7 @@ export class RestaurantController {
 
   @UseGuards(JwtAuthGuard, UploadAuthorizationGuard, UploadOwnershipGuard)
   @Delete(':id')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, SqlInjectionGuard)
   @ApiBearerAuth('JWT-auth')
   @ApiParam({
     name: 'id',
