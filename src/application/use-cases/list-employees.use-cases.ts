@@ -9,7 +9,7 @@ export class ListEmployeesService {
     private readonly employeeRepository: EmployeeRepository
   ) {}
 
-  execute(): Promise<EmployeeEntityInterface[]> {
+  execute(): Promise<any[]> {
     return this.employeeRepository.list();
   }
 }

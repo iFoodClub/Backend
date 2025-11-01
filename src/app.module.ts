@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { ConfigModule } from '@nestjs/config';
 import { DishModule } from './interfaces/http/dish.module';
 import { DatabaseModule } from './infrastructure/database/database.module';
 import { DishController } from './interfaces/http/controllers/dish.controller';
@@ -17,16 +18,37 @@ import { EmployeeWeeklyOrdersController } from './interfaces/http/controllers/em
 import { RestaurantRatingModule } from './interfaces/http/restaurant-rating.module';
 import { RestaurantRatingController } from './interfaces/http/controllers/restaurant-rating.controller';
 import { EmployeeWeeklyOrdersModule } from './interfaces/http/employee-weekly-orders.module';
-import { HealthCheckModule} from './interfaces/http/health-check.module';
+import { HealthCheckModule } from './interfaces/http/health-check.module';
 import { SecurityModule } from './infrastructure/security/security.module';
+import { UploadModule } from './interfaces/http/upload.module';
 
 @Module({
-  imports: [CompanyModule, DishModule, DatabaseModule, EmployeeModule, DishRatingModule,
-            RestaurantModule, UserModule, AuthModule, EmployeeWeeklyOrdersModule,
-            RestaurantRatingModule, HealthCheckModule, SecurityModule],
-  controllers: [CompanyController, DishController, EmployeeController, DishRatingControlller,
-                RestaurantController,UserController, EmployeeWeeklyOrdersController,
-                RestaurantRatingController],
+  imports: [
+    ConfigModule.forRoot({ isGlobal: true }),
+    CompanyModule,
+    DishModule,
+    DatabaseModule,
+    EmployeeModule,
+    DishRatingModule,
+    RestaurantModule,
+    UserModule,
+    AuthModule,
+    EmployeeWeeklyOrdersModule,
+    RestaurantRatingModule,
+    HealthCheckModule,
+    SecurityModule,
+    UploadModule,
+  ],
+  controllers: [
+    CompanyController,
+    DishController,
+    EmployeeController,
+    DishRatingControlller,
+    RestaurantController,
+    UserController,
+    EmployeeWeeklyOrdersController,
+    RestaurantRatingController,
+  ],
   providers: [],
 })
 export class AppModule {}

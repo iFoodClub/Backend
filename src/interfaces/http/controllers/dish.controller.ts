@@ -93,18 +93,31 @@ export class DishController {
     description: 'Erro ao criar prato',
     type: Http400,
   })
-  create(
-    @Body() dish: DishInterface, @Res() res: Response) {
+  async create(@Body() dish: DishInterface, @Res() res: Response) {
     const { restaurantId, name, description, price, image } = dish;
-    if(!(restaurantId && name && description && price && image)){
+    if (!(restaurantId && name && description && price && image)) {
       res.status(400).json({
-        sucess: false,
-        message: 'Todos os campos são obrigatórios'
+        success: false,
+        message: 'Todos os campos são obrigatórios',
       });
       return;
     }
-    this.createDishService.execute(dish);
-    res.send();
+
+    try {
+      const createdDish = await this.createDishService.execute(dish);
+      res.status(201).json({
+        success: true,
+        message: 'Prato criado com sucesso',
+        data: createdDish,
+      });
+    } catch (error) {
+      console.error('Erro ao criar prato:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Erro interno do servidor ao criar prato',
+        error: error instanceof Error ? error.message : 'Erro desconhecido',
+      });
+    }
   }
 
   @Put(':id')

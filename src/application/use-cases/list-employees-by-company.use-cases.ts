@@ -10,6 +10,7 @@ export interface EmployeeWithProfileImage {
   birthDate: Date;
   vacation: boolean;
   profileImage?: string;
+  email: string;
 }
 
 @Injectable()

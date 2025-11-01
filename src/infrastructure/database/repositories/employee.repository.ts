@@ -12,9 +12,27 @@ export class EmployeeRepository {
     private readonly userEntity: typeof UserEntity,
   ) {}
 
-  async list(): Promise<EmployeeEntityInterface[]> {
-    return await this.employeeEntity.findAll({
+  async list(): Promise<any[]> {
+    const employees = await this.employeeEntity.findAll({
+      include: [
+        {
+          model: this.userEntity,
+          as: 'user',
+          attributes: ['email'],
+        },
+      ],
     });
+
+    return employees.map(employee => ({
+      id: employee.id,
+      userId: employee.userId,
+      companyId: employee.companyId,
+      name: employee.name,
+      cpf: employee.cpf,
+      birthDate: employee.birthDate,
+      vacation: employee.vacation,
+      email: employee.user?.email || '',
+    }));
   }
   async create(employee: Omit<EmployeeEntityInterface, 'id'>): Promise<EmployeeEntityInterface> {
     return await this.employeeEntity.create(employee);
@@ -47,7 +65,7 @@ export class EmployeeRepository {
         {
           model: this.userEntity,
           as: 'user',
-          attributes: ['profileImage'],
+          attributes: ['profileImage', 'email'],
         },
       ],
       attributes: ['id', 'userId', 'companyId', 'name', 'cpf', 'birthDate', 'vacation'],
@@ -62,6 +80,7 @@ export class EmployeeRepository {
       birthDate: employee.birthDate,
       vacation: employee.vacation,
       profileImage: employee.user?.profileImage || null,
+      email: employee.user?.email || '',
     }));
   }
 
