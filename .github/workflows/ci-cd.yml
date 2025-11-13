@@ -14,7 +14,7 @@ permissions:
   contents: write
 
 env:
-  NODE_VERSION: '18'
+  NODE_VERSION: '20'
   AWS_REGION: 'sa-east-1'
   EB_APP_NAME: 'FoodClub-App'
 
