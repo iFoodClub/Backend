@@ -10,6 +10,7 @@ import { RestaurantRepository } from '../../infrastructure/database/repositories
 import { UserRepository } from '../../infrastructure/database/repositories/user.repository';
 import { IEmployeeWithWeeklyOrders } from '../../domain/models/weekly-orders-populated.model';
 import { DayOfWeek } from '../../domain/repositories/employee-weekly-orders.repository.interface';
+import { CompanyOrderStatus } from '../../domain/repositories/company-order.repository.interface';
 
 @Injectable()
 export class ListWeeklyOrdersByCompanyService {
@@ -60,22 +61,34 @@ export class ListWeeklyOrdersByCompanyService {
 
     for (const employee of employees) {
       // Buscar apenas os pedidos do dia atual
-      const employeeWeeklyOrder = await this.employeeWeeklyOrdersRepository.findByEmployeeAndDay(employee.id, currentDay);
-      
+      const employeeWeeklyOrder =
+        await this.employeeWeeklyOrdersRepository.findByEmployeeAndDay(
+          employee.id,
+          currentDay,
+        );
+
       // Só incluir funcionários que têm pedido marcado para o dia atual
       if (employeeWeeklyOrder && employeeWeeklyOrder.orderItemId) {
         const weeklyOrders = [];
-        const orderItem = await this.orderItemRepository.findByPk(employeeWeeklyOrder.orderItemId);
+        const orderItem = await this.orderItemRepository.findByPk(
+          employeeWeeklyOrder.orderItemId,
+        );
         if (orderItem && orderItem.dishId) {
           const dish = await this.dishRepository.getById(orderItem.dishId);
           if (dish) {
             // Buscar informações do restaurant
-            const restaurant = await this.restaurantRepository.getById(dish.restaurantId);
+            const restaurant = await this.restaurantRepository.getById(
+              dish.restaurantId,
+            );
             if (restaurant) {
-              const restaurantUser = await this.userRepository.getById(restaurant.userId);
-              
+              const restaurantUser = await this.userRepository.getById(
+                restaurant.userId,
+              );
+
               // Buscar informações do employee com profileImage
-              const employeeUser = await this.userRepository.getById(employee.userId);
+              const employeeUser = await this.userRepository.getById(
+                employee.userId,
+              );
 
               weeklyOrders.push({
                 id: employeeWeeklyOrder.id,
@@ -118,6 +131,127 @@ export class ListWeeklyOrdersByCompanyService {
       },
       currentDay,
       employees: result,
+    };
+  }
+
+  /**
+   * Retorna pedidos semanais agrupados por restaurante
+   * Estrutura simplificada: 1 empresa → 1 restaurante → N funcionários
+   */
+  async executeGroupedByRestaurant(companyId: number): Promise<{
+    company: { id: number; name: string };
+    dayOfWeek: DayOfWeek;
+    orderDate: string;
+    orderStatus: CompanyOrderStatus;
+    restaurant: {
+      id: number;
+      name: string;
+      profileImage: string;
+    } | null;
+    employees: Array<{
+      id: number;
+      name: string;
+      profileImage: string;
+      order: {
+        id: number;
+        name: string;
+        price: number;
+        image: string;
+      };
+    }>;
+  }> {
+    const company = await this.companyRepository.getById(companyId);
+    if (!company) {
+      throw new NotFoundException('Empresa não encontrada');
+    }
+
+    const currentDay = this.getCurrentDayOfWeek();
+    const employees = await this.employeeRepository.listByCompany(companyId);
+
+    const employeesList: Array<{
+      id: number;
+      name: string;
+      profileImage: string;
+      order: {
+        id: number;
+        name: string;
+        price: number;
+        image: string;
+      };
+    }> = [];
+
+    let restaurantData: {
+      id: number;
+      name: string;
+      profileImage: string;
+    } | null = null;
+
+    // Processar cada funcionário
+    for (const employee of employees) {
+      const employeeWeeklyOrder =
+        await this.employeeWeeklyOrdersRepository.findByEmployeeAndDay(
+          employee.id,
+          currentDay,
+        );
+
+      if (employeeWeeklyOrder && employeeWeeklyOrder.orderItemId) {
+        const orderItem = await this.orderItemRepository.findByPk(
+          employeeWeeklyOrder.orderItemId,
+        );
+        if (orderItem && orderItem.dishId) {
+          const dish = await this.dishRepository.getById(orderItem.dishId);
+          if (dish) {
+            // Buscar o restaurante (só precisa buscar uma vez)
+            if (!restaurantData) {
+              const restaurant = await this.restaurantRepository.getById(
+                dish.restaurantId,
+              );
+              if (restaurant) {
+                const restaurantUser = await this.userRepository.getById(
+                  restaurant.userId,
+                );
+                if (restaurantUser) {
+                  restaurantData = {
+                    id: restaurant.id,
+                    name: restaurant.name,
+                    profileImage: restaurantUser.profileImage,
+                  };
+                }
+              }
+            }
+
+            // Buscar informações do funcionário
+            const employeeUser = await this.userRepository.getById(
+              employee.userId,
+            );
+
+            // Adicionar funcionário à lista
+            employeesList.push({
+              id: employee.id,
+              name: employee.name,
+              profileImage: employeeUser?.profileImage || '',
+              order: {
+                id: dish.id,
+                name: dish.name,
+                price: dish.price,
+                image: dish.image || '',
+              },
+            });
+          }
+        }
+      }
+    }
+
+    return {
+      company: {
+        id: company.id,
+        name: company.name,
+      },
+      dayOfWeek: currentDay,
+      orderDate: new Date().toISOString(),
+      orderStatus: CompanyOrderStatus.CREATED,
+      restaurant: restaurantData,
+      employees: employeesList,
     };
   }
 }

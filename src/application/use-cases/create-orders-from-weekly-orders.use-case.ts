@@ -1,4 +1,9 @@
-import { Inject, Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import {
+  Inject,
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import { CompanyRepository } from '../../infrastructure/database/repositories/company.repository';
 import { EmployeeRepository } from '../../infrastructure/database/repositories/employee.repository';
 import { EmployeeWeeklyOrdersRepository } from '../../infrastructure/database/repositories/employee-weekly-orders.repository';
@@ -6,7 +11,10 @@ import { IndividualOrderRepository } from '../../infrastructure/database/reposit
 import { CompanyOrderRepository } from '../../infrastructure/database/repositories/company-order.repository';
 import { OrderItemRepository } from '../../infrastructure/database/repositories/order-item.repository';
 import { DishRepository } from '../../infrastructure/database/repositories/dish.repository';
-import { IndividualOrderStatus, IndividualOrderEntityInterface } from '../../domain/repositories/individual-order.repository.interface';
+import {
+  IndividualOrderStatus,
+  IndividualOrderEntityInterface,
+} from '../../domain/repositories/individual-order.repository.interface';
 import { CompanyOrderStatus } from '../../domain/repositories/company-order.repository.interface';
 import { DayOfWeek } from '../../domain/repositories/employee-weekly-orders.repository.interface';
 
@@ -30,12 +38,24 @@ export class CreateOrdersFromWeeklyOrdersUseCase {
   ) {}
 
   private getCurrentDayOfWeek(): DayOfWeek {
-    const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+    const days = [
+      'Sunday',
+      'Monday',
+      'Tuesday',
+      'Wednesday',
+      'Thursday',
+      'Friday',
+      'Saturday',
+    ];
     const today = new Date().getDay();
     return days[today] as DayOfWeek;
   }
 
-  async execute(companyId: number): Promise<{ message: string; ordersCreated: number; currentDay: DayOfWeek }> {
+  async execute(companyId: number): Promise<{
+    message: string;
+    ordersCreated: number;
+    currentDay: DayOfWeek;
+  }> {
     const company = await this.companyRepository.getById(companyId);
     if (!company) {
       throw new NotFoundException('Empresa não encontrada');
@@ -43,19 +63,27 @@ export class CreateOrdersFromWeeklyOrdersUseCase {
 
     const employees = await this.employeeRepository.listByCompany(companyId);
     if (employees.length === 0) {
-      throw new NotFoundException('Nenhum funcionário encontrado para esta empresa');
+      throw new NotFoundException(
+        'Nenhum funcionário encontrado para esta empresa',
+      );
     }
 
     const currentDay = this.getCurrentDayOfWeek();
-    
+
     // Validar se TODOS os funcionários têm pedidos semanais preenchidos para o dia atual
     const employeesWithoutWeeklyOrder: string[] = [];
-    
+
     for (const employee of employees) {
-      const weeklyOrder = await this.employeeWeeklyOrdersRepository.findByEmployeeAndDay(employee.id, currentDay);
-      
+      const weeklyOrder =
+        await this.employeeWeeklyOrdersRepository.findByEmployeeAndDay(
+          employee.id,
+          currentDay,
+        );
+
       if (!weeklyOrder || !weeklyOrder.orderItemId) {
-        employeesWithoutWeeklyOrder.push(employee.name || `Funcionário ID ${employee.id}`);
+        employeesWithoutWeeklyOrder.push(
+          employee.name || `Funcionário ID ${employee.id}`,
+        );
       }
     }
 
@@ -63,7 +91,7 @@ export class CreateOrdersFromWeeklyOrdersUseCase {
     if (employeesWithoutWeeklyOrder.length > 0) {
       throw new BadRequestException(
         `Nem todos os funcionários preencheram seus pedidos semanais para ${currentDay}. ` +
-        `Funcionários sem pedido: ${employeesWithoutWeeklyOrder.join(', ')}`
+          `Funcionários sem pedido: ${employeesWithoutWeeklyOrder.join(', ')}`,
       );
     }
 
@@ -74,10 +102,16 @@ export class CreateOrdersFromWeeklyOrdersUseCase {
 
     for (const employee of employees) {
       // Buscar os pedidos do dia atual (já validado que existe)
-      const weeklyOrder = await this.employeeWeeklyOrdersRepository.findByEmployeeAndDay(employee.id, currentDay);
-      
+      const weeklyOrder =
+        await this.employeeWeeklyOrdersRepository.findByEmployeeAndDay(
+          employee.id,
+          currentDay,
+        );
+
       if (weeklyOrder && weeklyOrder.orderItemId) {
-        const orderItem = await this.orderItemRepository.findByPk(weeklyOrder.orderItemId);
+        const orderItem = await this.orderItemRepository.findByPk(
+          weeklyOrder.orderItemId,
+        );
         if (orderItem && orderItem.dishId) {
           const dish = await this.dishRepository.getById(orderItem.dishId);
           if (dish) {
@@ -95,7 +129,8 @@ export class CreateOrdersFromWeeklyOrdersUseCase {
               dishId: dish.id,
               status: IndividualOrderStatus.PREPARING,
             };
-            const createdOrder = await this.individualOrderRepository.create(orderData);
+            const createdOrder =
+              await this.individualOrderRepository.create(orderData);
 
             createdOrderIds.push(createdOrder.id);
             ordersCreated++;
@@ -111,14 +146,16 @@ export class CreateOrdersFromWeeklyOrdersUseCase {
 
     // Validar se temos restaurantId
     if (!restaurantId && !company.restaurantId) {
-      throw new BadRequestException('Restaurante não identificado para criar o pedido da empresa');
+      throw new BadRequestException(
+        'Restaurante não identificado para criar o pedido da empresa',
+      );
     }
 
     // Criar pedido da empresa (já validado que todos têm pedidos)
     const companyOrder = await this.companyOrderRepository.create({
       companyId: companyId,
       restaurantId: restaurantId || company.restaurantId,
-      status: CompanyOrderStatus.PENDING,
+      status: CompanyOrderStatus.CREATED,
     });
 
     // Atualizar os pedidos individuais com o ID do pedido da empresa
@@ -137,4 +174,4 @@ export class CreateOrdersFromWeeklyOrdersUseCase {
       currentDay,
     };
   }
-} 
+}

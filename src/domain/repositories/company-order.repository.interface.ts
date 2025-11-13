@@ -1,9 +1,9 @@
-import { IndividualOrderEntityInterface } from "./individual-order.repository.interface";
+import { IndividualOrderEntityInterface } from './individual-order.repository.interface';
 
 export enum CompanyOrderStatus {
-  PENDING = 'pending',
-  CONFIRMED = 'confirmed',
-  PREPARING = 'preparing',
+  CREATED = 'created',
+  ORDERED = 'ordered',
+  INPROGRESS = 'inProgress',
   DELIVERED = 'delivered',
   CANCELED = 'canceled',
 }

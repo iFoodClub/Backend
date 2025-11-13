@@ -23,7 +23,13 @@ import { Response } from 'express';
 import { CompanyInterface } from 'src/domain/models/company.model';
 import { CompanyEntityInterface } from 'src/domain/repositories/company.repository.interface';
 import { ListCompaniesService } from '../../../application/use-cases/list-companies.use-cases';
-import { ApiBody, ApiParam, ApiResponse, ApiTags, ApiBearerAuth } from '@nestjs/swagger';
+import {
+  ApiBody,
+  ApiParam,
+  ApiResponse,
+  ApiTags,
+  ApiBearerAuth,
+} from '@nestjs/swagger';
 import { ListCompanyDtoResponse } from 'src/interfaces/http/dtos/response/listCompany.dto';
 import { Http404 } from 'src/interfaces/http/dtos/response/http404';
 import { Http400 } from 'src/interfaces/http/dtos/response/http400';
@@ -362,7 +368,7 @@ export class CompanyController {
   @ApiResponse({
     status: 200,
     description:
-      'Pedidos semanais dos funcionários da empresa para o dia atual',
+      'Pedidos semanais dos funcionários da empresa para o dia atual, agrupados por restaurante',
     type: CompanyWeeklyOrdersResponse,
   })
   @ApiResponse({
@@ -383,9 +389,11 @@ export class CompanyController {
       return;
     }
 
-    const weeklyOrders = await this.listWeeklyOrdersByCompanyService.execute(
-      Number(id),
-    );
+    // Usando o novo método que agrupa por restaurante
+    const weeklyOrders =
+      await this.listWeeklyOrdersByCompanyService.executeGroupedByRestaurant(
+        Number(id),
+      );
     res.status(200).json(weeklyOrders);
   }
 
@@ -441,11 +449,13 @@ export class CompanyController {
         });
       } else {
         console.error('Erro ao criar pedidos a partir dos semanais:', error);
-        const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido';
+        const errorMessage =
+          error instanceof Error ? error.message : 'Erro desconhecido';
         res.status(500).json({
           success: false,
           message: 'Erro interno do servidor',
-          error: process.env.NODE_ENV === 'development' ? errorMessage : undefined,
+          error:
+            process.env.NODE_ENV === 'development' ? errorMessage : undefined,
         });
       }
     }
