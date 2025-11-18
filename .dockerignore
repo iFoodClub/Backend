@@ -1,24 +1,48 @@
-# Dependências
+# Dependencies
 node_modules
 npm-debug.log
+yarn-error.log
 
-# Arquivos de build
+# Build
 dist
 build
+*.tsbuildinfo
 
-# Arquivos de desenvolvimento
-.git
-.gitignore
+# Tests
+coverage
+*.test.ts
+*.spec.ts
+test
+
+# Environment
+.env
 .env.local
 .env.development
 .env.test
-*.md
-!README.md
+.env.production
 
-# Outros
+# IDE
 .vscode
 .idea
+*.swp
+*.swo
+*~
+
+# Git
+.git
+.gitignore
+.gitattributes
+
+# CI/CD
+.github
+
+# Documentation
+*.md
+
+# Docker
+docker-compose.yml
+
+# Misc
+.DS_Store
 *.log
-*.sqlite
-coverage
-test 
+*.sqlite 
