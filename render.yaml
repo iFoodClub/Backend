@@ -21,8 +21,13 @@ services:
     env: docker
     plan: free # Opções: free, starter, standard, pro
     region: oregon
+    # Build direto do Dockerfile (deploy automático via Git)
     dockerfilePath: ./Dockerfile
     dockerContext: .
+    # Para usar imagem do Docker Hub:
+    # 1. Comente dockerfilePath e dockerContext acima
+    # 2. Descomente e ajuste a linha abaixo:
+    # image: docker.io/seu-usuario-dockerhub/foodclub-backend:development
     envVars:
       - key: NODE_ENV
         value: production

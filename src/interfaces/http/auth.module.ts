@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/require-await */
 import { Module } from '@nestjs/common';
 import { JwtModule } from '@nestjs/jwt';
 import { ConfigModule, ConfigService } from '@nestjs/config';
@@ -20,7 +21,7 @@ import { AuthService } from 'src/application/use-cases/login.use-cases';
       imports: [ConfigModule],
       useFactory: async (configService: ConfigService) => ({
         secret: configService.get<string>('JWT_SECRET'),
-        signOptions: { 
+        signOptions: {
           expiresIn: `${configService.get<number>('JWT_EXPIRATION')}s`,
         },
       }),
@@ -38,4 +39,4 @@ import { AuthService } from 'src/application/use-cases/login.use-cases';
   ],
   exports: [AuthService, JwtStrategy, PassportModule],
 })
-export class AuthModule {} 
+export class AuthModule {}
