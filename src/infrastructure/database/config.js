@@ -8,10 +8,11 @@ module.exports = {
     host: process.env.DB_HOST,
     port: process.env.DB_PORT,
     dialect: 'postgres',
-    logging: false, // opcional: remove logs SQL do console
+    logging: false,
     dialectOptions: {
       ssl: {
         require: true,
+        rejectUnauthorized: false // configurado por conta do render, apenas
       }
     }
   },
@@ -22,10 +23,11 @@ module.exports = {
     host: process.env.DB_HOST,
     port: process.env.DB_PORT,
     dialect: 'postgres',
-    logging: false, // opcional: remove logs SQL do console
+    logging: false,
     dialectOptions: {
       ssl: {
         require: true,
+        rejectUnauthorized: false // configurado por conta do render, apenas
       }
     }
   }
