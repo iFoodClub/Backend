@@ -13,9 +13,9 @@
     "start:debug": "nest start --debug --watch",
     "start:prod": "npm run db:migrate && node dist/main",
     "start:prod:init": "sh scripts/start-with-init.sh",
-    "db:migrate": "npx sequelize-cli db:migrate --config src/infrastructure/database/config.js",
-    "db:seed": "npx sequelize-cli db:seed:all --config src/infrastructure/database/config.js",
-    "db:seed:undo": "npx sequelize-cli db:seed:undo:all --config src/infrastructure/database/config.js",
+    "db:migrate": "npx sequelize-cli db:migrate --config src/infrastructure/database/config.js --env production",
+    "db:seed": "npx sequelize-cli db:seed:all --config src/infrastructure/database/config.js --env production",
+    "db:seed:undo": "npx sequelize-cli db:seed:undo:all --config src/infrastructure/database/config.js --env production",
     "lint": "eslint \"{src,apps,libs,test}/**/*.ts\" --fix"
   },
   "dependencies": {
