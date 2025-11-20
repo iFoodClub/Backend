@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { DishModule } from './interfaces/http/dish.module';
 import { DatabaseModule } from './infrastructure/database/database.module';
+import { DatabaseModule as DatabaseControllerModule } from './interfaces/http/database.module';
 import { DishController } from './interfaces/http/controllers/dish.controller';
 import { CompanyModule } from './interfaces/http/company.module';
 import { EmployeeModule } from './interfaces/http/employee.module';
@@ -28,6 +29,7 @@ import { UploadModule } from './interfaces/http/upload.module';
     CompanyModule,
     DishModule,
     DatabaseModule,
+    DatabaseControllerModule,
     EmployeeModule,
     DishRatingModule,
     RestaurantModule,
