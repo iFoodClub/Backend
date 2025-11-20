@@ -1,23 +1,11 @@
 # Configuração do Render para deploy automático
 # Documentação: https://render.com/docs/yaml-spec
+# Nota: O banco de dados 'foodclub-db' foi criado manualmente no Dashboard
 
 services:
-  # Banco de dados PostgreSQL
-  - type: pserv
-    name: foodclub-db
-    env: docker
-    plan: free # Opções: free, starter, standard, pro
-    region: oregon # Região mais próxima da AWS (us-west)
-    databases:
-      - name: foodclub-postgres
-        databaseName: foodclub
-        user: foodclub_user
-        plan: free
-        ipAllowList: [] # Vazio = aceita conexões de qualquer IP
-
   # Backend API
   - type: web
-    name: foodclub-backend
+    name: Backend
     env: docker
     plan: free # Opções: free, starter, standard, pro
     region: oregon
@@ -35,23 +23,23 @@ services:
         value: 3000
       - key: DB_HOST
         fromDatabase:
-          name: foodclub-postgres
+          name: foodclub-db
           property: host
       - key: DB_PORT
         fromDatabase:
-          name: foodclub-postgres
+          name: foodclub-db
           property: port
       - key: DB_USERNAME
         fromDatabase:
-          name: foodclub-postgres
+          name: foodclub-db
           property: user
       - key: DB_PASSWORD
         fromDatabase:
-          name: foodclub-postgres
+          name: foodclub-db
           property: password
       - key: DB_DATABASE
         fromDatabase:
-          name: foodclub-postgres
+          name: foodclub-db
           property: database
       - key: JWT_SECRET
         generateValue: true # Gera automaticamente

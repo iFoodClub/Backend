@@ -15,6 +15,7 @@ RUN npm ci || npm install
 # Copia os arquivos de configuração do TypeScript
 COPY tsconfig*.json ./
 COPY nest-cli.json ./
+COPY .sequelizerc ./
 
 # Copia o código fonte
 COPY src ./src
@@ -40,6 +41,7 @@ RUN addgroup -g 1001 -S nodejs && adduser -S nodejs -u 1001
 COPY --from=builder --chown=nodejs:nodejs /app/dist ./dist
 COPY --from=builder --chown=nodejs:nodejs /app/node_modules ./node_modules
 COPY --from=builder --chown=nodejs:nodejs /app/package*.json ./
+COPY --from=builder --chown=nodejs:nodejs /app/.sequelizerc ./
 COPY --from=builder --chown=nodejs:nodejs /app/src/infrastructure/database ./src/infrastructure/database
 
 # Muda para usuário não-root
