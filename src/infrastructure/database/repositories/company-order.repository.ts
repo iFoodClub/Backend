@@ -5,6 +5,7 @@ import { CompanyEntity } from '../entities/company.entity';
 import { IndividualOrderEntity } from '../entities/individual-order.entity';
 import { EmployeeEntity } from '../entities/employee.entity';
 import { DishEntity } from '../entities/dish.entity';
+import { RestaurantEntity } from '../entities/restaurant.entity';
 import { ICompanyOrder } from 'src/domain/models/company-order.model';
 import { UserEntity } from '../entities/user.entity';
 
@@ -35,6 +36,47 @@ export class CompanyOrderRepository {
 
   async listByCompany(companyId: number): Promise<CompanyOrderEntityInterface[]> {
     return await this.companyOrderEntity.findAll({ where: { companyId } });
+  }
+
+  async findOrdersHistoryByCompany(companyId: number): Promise<CompanyOrderEntity[]> {
+    const companyOrders = await this.companyOrderEntity.findAll({
+      where: { companyId },
+      include: [
+        {
+          model: RestaurantEntity,
+          as: 'restaurant',
+          include: [
+            {
+              model: UserEntity,
+              as: 'user',
+            },
+          ],
+        },
+        {
+          model: IndividualOrderEntity,
+          as: 'collaboratorsOrders',
+          include: [
+            {
+              model: EmployeeEntity,
+              as: 'employee',
+              include: [
+                {
+                  model: UserEntity,
+                  as: 'user',
+                },
+              ],
+            },
+            {
+              model: DishEntity,
+              as: 'dish',
+            },
+          ],
+        },
+      ],
+      order: [['id', 'DESC']],
+    });
+
+    return companyOrders;
   }
 
   async findOrdersByRestaurant(restaurantId: number): Promise<CompanyOrderEntity[]> {
