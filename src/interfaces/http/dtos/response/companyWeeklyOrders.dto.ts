@@ -17,6 +17,14 @@ export class EmployeeWithWeeklyOrders {
   name: string;
 
   @ApiProperty({
+    description: 'Imagem de perfil do funcionário',
+    example: 'https://example.com/profile.png',
+    required: false,
+    nullable: true,
+  })
+  profileImage?: string | null;
+
+  @ApiProperty({
     description: 'Pedidos semanais do funcionário',
     type: [EmployeeWeeklyOrderResponse],
     isArray: true

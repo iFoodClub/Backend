@@ -35,6 +35,7 @@ export class ListWeeklyOrdersByCompanyService {
     employees: Array<{
       id: number;
       name: string;
+      profileImage: string | null;
       weeklyOrders: EmployeeWeeklyOrderResponse[];
     }>;
   }> {
@@ -44,16 +45,26 @@ export class ListWeeklyOrdersByCompanyService {
     }
 
     const currentDay = this.getCurrentDayOfWeek();
-    const employees = await this.employeeRepository.listByCompany(companyId);
+    const employees =
+      await this.employeeRepository.listByCompanyWithProfileImage(
+        companyId,
+      );
     const result = [];
 
     for (const employee of employees) {
       // Buscar apenas os pedidos do dia atual
-      const employeeWeeklyOrder = await this.employeeWeeklyOrdersRepository.findByEmployeeAndDay(employee.id, currentDay);
-      const weeklyOrders = [];
+      const employeeWeeklyOrder =
+        await this.employeeWeeklyOrdersRepository.findByEmployeeAndDay(
+          employee.id,
+          currentDay,
+        );
+      const weeklyOrders: EmployeeWeeklyOrderResponse[] = [];
 
       if (employeeWeeklyOrder && employeeWeeklyOrder.orderItemId) {
-        const orderItem = await this.orderItemRepository.findByPk(employeeWeeklyOrder.orderItemId);
+        const orderItem = await this.orderItemRepository.findByPk(
+          employeeWeeklyOrder.orderItemId,
+        );
+
         if (orderItem && orderItem.dishId) {
           const dish = await this.dishRepository.getById(orderItem.dishId);
           if (dish) {
@@ -72,13 +83,41 @@ export class ListWeeklyOrdersByCompanyService {
                 image: dish.image,
               },
             });
+          } else {
+            weeklyOrders.push({
+              id: employeeWeeklyOrder.id,
+              employeeId: employeeWeeklyOrder.employeeId,
+              dayOfWeek: employeeWeeklyOrder.dayOfWeek,
+              orderItemId: employeeWeeklyOrder.orderItemId,
+              order: orderItem,
+              dish: null,
+            });
           }
+        } else {
+          weeklyOrders.push({
+            id: employeeWeeklyOrder.id,
+            employeeId: employeeWeeklyOrder.employeeId,
+            dayOfWeek: employeeWeeklyOrder.dayOfWeek,
+            orderItemId: employeeWeeklyOrder.orderItemId,
+            order: orderItem ?? [],
+            dish: null,
+          });
         }
+      } else {
+        weeklyOrders.push({
+          id: null,
+          employeeId: employee.id,
+          dayOfWeek: currentDay,
+          orderItemId: null,
+          order: [],
+          dish: null,
+        });
       }
 
       result.push({
         id: employee.id,
         name: employee.name,
+        profileImage: employee.profileImage ?? null,
         weeklyOrders,
       });
     }
