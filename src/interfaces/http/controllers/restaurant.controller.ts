@@ -422,16 +422,6 @@ export class RestaurantController {
     @Res() res: Response,
   ): Promise<void> {
     try {
-      // Validar se o ID do pedido individual na URL corresponde ao do DTO
-      if (Number(individualOrderId) !== updateDto.id) {
-        res.status(400).json({
-          success: false,
-          message:
-            'ID do pedido individual na URL não corresponde ao ID no corpo da requisição',
-        });
-        return;
-      }
-
       const result = await this.updateIndividualOrderStatusUseCase.execute(
         Number(individualOrderId),
         updateDto.status,
@@ -492,16 +482,6 @@ export class RestaurantController {
     @Res() res: Response,
   ): Promise<void> {
     try {
-      // Validar se o ID do pedido da empresa na URL corresponde ao do DTO
-      if (Number(orderId) !== updateDto.id) {
-        res.status(400).json({
-          success: false,
-          message:
-            'ID do pedido da empresa na URL não corresponde ao ID no corpo da requisição',
-        });
-        return;
-      }
-
       const result = await this.updateCompanyOrderStatusUseCase.execute(
         Number(orderId),
         updateDto.status,
