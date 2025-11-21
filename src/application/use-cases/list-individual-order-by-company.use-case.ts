@@ -42,9 +42,11 @@ export class ListIndividualOrderByCompanyUseCase {
     for (const companyOrder of companyOrders) {
       const plainOrder = companyOrder.get({ plain: true });
       
-      // Calcular preço total
+      // Calcular preço total (convertendo strings para números)
       const totalPrice = plainOrder.collaboratorsOrders?.reduce((total, empOrder) => {
-        return total + (empOrder.dish?.price || 0);
+        const price = empOrder.dish?.price || 0;
+        const priceAsNumber = typeof price === 'string' ? parseFloat(price) : Number(price);
+        return total + (isNaN(priceAsNumber) ? 0 : priceAsNumber);
       }, 0) || 0;
 
       // Mapear status do backend para o frontend

@@ -47,7 +47,17 @@ export class CreateOrdersFromWeeklyOrdersUseCase {
     }
 
     const currentDay = this.getCurrentDayOfWeek();
+    
+    // Verificar se já existem pedidos individuais pendentes para hoje
+    const existingPendingOrders = await this.individualOrderRepository.listByCompanyOrderIdNull(companyId);
+    if (existingPendingOrders.length > 0) {
+      throw new NotFoundException(
+        `Já existem ${existingPendingOrders.length} pedido(s) pendente(s) para hoje. Finalize ou cancele os pedidos existentes antes de criar novos.`
+      );
+    }
+
     let ordersCreated = 0;
+    const createdOrderIds: number[] = [];
 
     for (const employee of employees) {
       // Buscar apenas os pedidos do dia atual
@@ -62,10 +72,13 @@ export class CreateOrdersFromWeeklyOrdersUseCase {
             const individualOrder = await this.individualOrderRepository.create({
               employeeId: employee.id,
               dishId: dish.id,
+              companyId: companyId,
+              restaurantId: dish.restaurantId,
               status: IndividualOrderStatus.PREPARING,
               companyOrderId: null, // Será atualizado quando o pedido da empresa for criado
             });
 
+            createdOrderIds.push(individualOrder.id);
             ordersCreated++;
           }
         }
@@ -73,19 +86,21 @@ export class CreateOrdersFromWeeklyOrdersUseCase {
     }
 
     if (ordersCreated > 0) {
+      // Buscar o restaurante do primeiro prato para criar o pedido da empresa
+      const firstOrder = await this.individualOrderRepository.getById(createdOrderIds[0]);
+      const firstDish = await this.dishRepository.getById(firstOrder.dishId);
+      
       // Criar pedido da empresa
       const companyOrder = await this.companyOrderRepository.create({
         companyId: companyId,
-        restaurantId: company.restaurantId,
+        restaurantId: firstDish.restaurantId,
         status: CompanyOrderStatus.PENDING,
       });
 
-      // Atualizar os pedidos individuais com o ID do pedido da empresa
-      const pendingOrders = await this.individualOrderRepository.listByCompanyOrderIdNull(companyId);
-      
-      for (const order of pendingOrders) {
+      // Atualizar apenas os pedidos individuais recém-criados com o ID do pedido da empresa
+      for (const orderId of createdOrderIds) {
         await this.individualOrderRepository.update({
-          id: order.id,
+          id: orderId,
           companyOrderId: companyOrder.id,
           status: IndividualOrderStatus.PREPARING,
         });
