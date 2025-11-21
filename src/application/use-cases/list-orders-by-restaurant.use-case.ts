@@ -24,9 +24,11 @@ export class ListOrdersByRestaurantUseCase {
     const companyOrders = await Promise.all(orders.map(async order => {
       const plainOrder = order.get({ plain: true });
       
-      // Calcular preço total
-      const totalPrice =  plainOrder.collaboratorsOrders?.reduce((total, empOrder) => {
-        return total + (empOrder.dish?.price || 0);
+      // Calcular preço total (convertendo strings para números)
+      const totalPrice = plainOrder.collaboratorsOrders?.reduce((total, empOrder) => {
+        const price = empOrder.dish?.price || 0;
+        const priceAsNumber = typeof price === 'string' ? parseFloat(price) : Number(price);
+        return total + (isNaN(priceAsNumber) ? 0 : priceAsNumber);
       }, 0) || 0;
       
       const company = await this.companyRepository.getById(plainOrder.company?.id)
