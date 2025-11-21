@@ -28,9 +28,7 @@ export class ListOrdersByRestaurantUseCase {
       const totalPrice =  plainOrder.collaboratorsOrders?.reduce((total, empOrder) => {
         return total + (empOrder.dish?.price || 0);
       }, 0) || 0;
-      let employeeId = plainOrder.collaboratorsOrders?.map(empOrder => empOrder.employee?.id) as number[]
-      const employee = await this.employeeRepository.getById(employeeId[0])
-      const userEmployee = await this.userRepository.getById(employee?.userId)
+      
       const company = await this.companyRepository.getById(plainOrder.company?.id)
       const userCompany = await this.userRepository.getById(company?.userId)
 
@@ -48,6 +46,48 @@ export class ListOrdersByRestaurantUseCase {
         'preparing': 'Preparando',
         'completed': 'Concluido',
       };
+      
+      // Mapear employeeOrders buscando os dados de cada funcionário individualmente
+      const employeeOrders = await Promise.all(
+        (order.collaboratorsOrders || []).map(async (empOrderEntity) => {
+          // Tentar usar os dados do objeto Sequelize primeiro (mais eficiente)
+          const employeeEntity = empOrderEntity.employee;
+          let employeeName = employeeEntity?.name;
+          let employeeImage = employeeEntity?.user?.profileImage;
+          
+          // Se nome ou imagem não estiverem disponíveis, buscar individualmente
+          if (employeeEntity?.id && (!employeeName || !employeeImage)) {
+            const employee = await this.employeeRepository.getById(employeeEntity.id);
+            if (employee) {
+              employeeName = employee.name || employeeName || 'Funcionário';
+              if (employee.userId) {
+                const userEmployee = await this.userRepository.getById(employee.userId);
+                employeeImage = userEmployee?.profileImage || employeeImage || '';
+              }
+            }
+          }
+          
+          const plainEmpOrder = empOrderEntity.get({ plain: true });
+          
+          return {
+            id: plainEmpOrder.id,
+            status: individualStatusMap[plainEmpOrder.status] || 'Preparando',
+            employee: {
+              id: employeeEntity?.id || 0,
+              name: employeeName || 'Funcionário',
+              image: employeeImage || '',
+            },
+            dish: {
+              id: plainEmpOrder.dish?.id || 0,
+              name: plainEmpOrder.dish?.name || 'Prato',
+              image: plainEmpOrder.dish?.image || '',
+              price: plainEmpOrder.dish?.price || 0,
+              restaurantId: plainEmpOrder.dish?.restaurantId || 0,
+            },
+          };
+        })
+      );
+      
       return {
         id: plainOrder.id,
         code: `FC-${plainOrder.id}`,
@@ -59,23 +99,7 @@ export class ListOrdersByRestaurantUseCase {
           name: company?.name || 'Empresa',
           image: userCompany?.profileImage || '',
         },
-        employeeOrders: plainOrder.collaboratorsOrders?.map(empOrder => ({
-          
-          id: empOrder.id,
-          status: individualStatusMap[empOrder.status] || 'Preparando',
-          employee: {
-            id: empOrder.employee?.id || 0,
-            name: employee?.name || 'Funcionário',
-            image: userEmployee?.profileImage || '',
-          },
-          dish: {
-            id: empOrder.dish?.id || 0,
-            name: empOrder.dish?.name || 'Prato',
-            image: empOrder.dish?.image || '',
-            price: empOrder.dish?.price || 0,
-            restaurantId: empOrder.dish?.restaurantId || 0,
-          },
-        })) || [],
+        employeeOrders,
       };
     }));
     if (!orders || orders.length === 0) {
