@@ -39,10 +39,11 @@ export class IDEmployeeDto implements IDEmployee {
 
   @ApiProperty({
     description: 'Imagem de perfil do funcionário',
-    example: 'https://example.com/profile.jpg',
-    required: false
+    example: 'https://example.com/profile.png',
+    required: false,
+    nullable: true,
   })
-  profileImage?: string;
+  profileImage?: string | null;
 }
 
 export class IDDishDto implements IDDish {
