@@ -56,7 +56,6 @@ export class CloudWatchMetricsService {
           {
             MetricName: data.metricName,
             Value: data.value,
-            Unit: data.unit || 'None',
             Timestamp: new Date(),
             Dimensions: dimensions,
           },
