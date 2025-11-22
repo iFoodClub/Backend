@@ -48,13 +48,17 @@ services:
       - key: SEED_SECRET
         generateValue: true # Secret para endpoint de seeds
       - key: AWS_REGION
-        sync: false # Variável opcional para S3
+        value: us-east-1 # Usado para S3 e CloudWatch
       - key: AWS_ACCESS_KEY_ID
-        sync: false # Variável opcional para S3
+        sync: false # Configure no Dashboard - usado para S3 e CloudWatch
       - key: AWS_SECRET_ACCESS_KEY
-        sync: false # Variável opcional para S3
+        sync: false # Configure no Dashboard - usado para S3 e CloudWatch
       - key: AWS_S3_BUCKET_NAME
         sync: false # Variável opcional para S3
+      - key: CLOUDWATCH_LOG_GROUP
+        value: /aws/foodclub/backend
+      - key: CLOUDWATCH_NAMESPACE
+        value: FoodClub/Backend
     healthCheckPath: /health-check
     autoDeploy: true # Deploy automático ao fazer push
     branch: development # Branch que aciona deploy automático
