@@ -22,10 +22,14 @@ import { EmployeeWeeklyOrdersModule } from './interfaces/http/employee-weekly-or
 import { HealthCheckModule } from './interfaces/http/health-check.module';
 import { SecurityModule } from './infrastructure/security/security.module';
 import { UploadModule } from './interfaces/http/upload.module';
+import { ObservabilityModule } from './interfaces/http/observability.module';
+import { APP_INTERCEPTOR } from '@nestjs/core';
+import { MetricsInterceptor } from './infrastructure/observability/metrics.interceptor';
 
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
+    ObservabilityModule,
     CompanyModule,
     DishModule,
     DatabaseModule,
@@ -51,6 +55,11 @@ import { UploadModule } from './interfaces/http/upload.module';
     EmployeeWeeklyOrdersController,
     RestaurantRatingController,
   ],
-  providers: [],
+  providers: [
+    {
+      provide: APP_INTERCEPTOR,
+      useClass: MetricsInterceptor,
+    },
+  ],
 })
 export class AppModule {}
