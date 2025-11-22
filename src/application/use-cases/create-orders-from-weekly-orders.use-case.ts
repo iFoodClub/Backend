@@ -69,6 +69,14 @@ export class CreateOrdersFromWeeklyOrdersUseCase {
     }
 
     const currentDay = this.getCurrentDayOfWeek();
+    
+    // Verificar se já existem pedidos individuais pendentes para hoje
+    const existingPendingOrders = await this.individualOrderRepository.listByCompanyOrderIdNull(companyId);
+    if (existingPendingOrders.length > 0) {
+      throw new BadRequestException(
+        `Já existem ${existingPendingOrders.length} pedido(s) pendente(s) para hoje. Finalize ou cancele os pedidos existentes antes de criar novos.`
+      );
+    }
 
     // Validar se TODOS os funcionários têm pedidos semanais preenchidos para o dia atual
     const employeesWithoutWeeklyOrder: string[] = [];
@@ -155,7 +163,7 @@ export class CreateOrdersFromWeeklyOrdersUseCase {
     const companyOrder = await this.companyOrderRepository.create({
       companyId: companyId,
       restaurantId: restaurantId || company.restaurantId,
-      status: CompanyOrderStatus.CREATED,
+      status: CompanyOrderStatus.PENDING,
     });
 
     // Atualizar os pedidos individuais com o ID do pedido da empresa

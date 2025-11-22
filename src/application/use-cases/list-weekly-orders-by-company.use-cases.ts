@@ -8,9 +8,9 @@ import { DishRepository } from '../../infrastructure/database/repositories/dish.
 import { CompanyRepository } from '../../infrastructure/database/repositories/company.repository';
 import { RestaurantRepository } from '../../infrastructure/database/repositories/restaurant.repository';
 import { UserRepository } from '../../infrastructure/database/repositories/user.repository';
-import { IEmployeeWithWeeklyOrders } from '../../domain/models/weekly-orders-populated.model';
 import { DayOfWeek } from '../../domain/repositories/employee-weekly-orders.repository.interface';
 import { CompanyOrderStatus } from '../../domain/repositories/company-order.repository.interface';
+import { EmployeeWeeklyOrderResponse } from '../../interfaces/http/dtos/response/employeeWeeklyOrder.dto';
 
 @Injectable()
 export class ListWeeklyOrdersByCompanyService {
@@ -48,7 +48,12 @@ export class ListWeeklyOrdersByCompanyService {
   async execute(companyId: number): Promise<{
     company: { id: number; name: string };
     currentDay: DayOfWeek;
-    employees: IEmployeeWithWeeklyOrders[];
+    employees: Array<{
+      id: number;
+      name: string;
+      profileImage: string | null;
+      weeklyOrders: EmployeeWeeklyOrderResponse[];
+    }>;
   }> {
     const company = await this.companyRepository.getById(companyId);
     if (!company) {
@@ -56,72 +61,85 @@ export class ListWeeklyOrdersByCompanyService {
     }
 
     const currentDay = this.getCurrentDayOfWeek();
-    const employees = await this.employeeRepository.listByCompany(companyId);
-    const result: IEmployeeWithWeeklyOrders[] = [];
+    const employees =
+      await this.employeeRepository.listByCompanyWithProfileImage(companyId);
+    const result = [];
 
     for (const employee of employees) {
       // Buscar apenas os pedidos do dia atual
       const employeeWeeklyOrder =
         await this.employeeWeeklyOrdersRepository.findByEmployeeAndDay(
-          employee.id,
+          (employee as { id: number }).id,
           currentDay,
         );
+      const weeklyOrders: EmployeeWeeklyOrderResponse[] = [];
 
       // Só incluir funcionários que têm pedido marcado para o dia atual
       if (employeeWeeklyOrder && employeeWeeklyOrder.orderItemId) {
-        const weeklyOrders = [];
         const orderItem = await this.orderItemRepository.findByPk(
           employeeWeeklyOrder.orderItemId,
         );
+
         if (orderItem && orderItem.dishId) {
           const dish = await this.dishRepository.getById(orderItem.dishId);
           if (dish) {
-            // Buscar informações do restaurant
-            const restaurant = await this.restaurantRepository.getById(
-              dish.restaurantId,
-            );
-            if (restaurant) {
-              const restaurantUser = await this.userRepository.getById(
-                restaurant.userId,
-              );
-
-              // Buscar informações do employee com profileImage
-              const employeeUser = await this.userRepository.getById(
-                employee.userId,
-              );
-
-              weeklyOrders.push({
-                id: employeeWeeklyOrder.id,
-                employee: {
-                  id: employee.id,
-                  name: employee.name,
-                  profileImage: employeeUser?.profileImage,
-                },
-                order: {
-                  id: dish.id,
-                  name: dish.name,
-                  price: dish.price,
-                  image: dish.image || '',
-                },
-              });
-
-              // Só adiciona ao resultado se tiver pedido válido e restaurant
-              if (weeklyOrders.length > 0 && restaurantUser) {
-                result.push({
-                  id: employee.id,
-                  dayOfWeek: currentDay,
-                  restaurant: {
-                    id: restaurant.id,
-                    name: restaurant.name,
-                    profileImage: restaurantUser.profileImage,
-                  },
-                  weeklyOrders,
-                });
-              }
-            }
+            weeklyOrders.push({
+              id: employeeWeeklyOrder.id,
+              employeeId: employeeWeeklyOrder.employeeId,
+              dayOfWeek: employeeWeeklyOrder.dayOfWeek,
+              orderItemId: employeeWeeklyOrder.orderItemId,
+              order: orderItem,
+              dish: {
+                id: dish.id,
+                restaurantId: dish.restaurantId,
+                name: dish.name,
+                description: dish.description,
+                price: dish.price,
+                image: dish.image,
+              },
+            });
+          } else {
+            weeklyOrders.push({
+              id: employeeWeeklyOrder.id,
+              employeeId: employeeWeeklyOrder.employeeId,
+              dayOfWeek: employeeWeeklyOrder.dayOfWeek,
+              orderItemId: employeeWeeklyOrder.orderItemId,
+              order: orderItem,
+              dish: null,
+            });
           }
+        } else {
+          weeklyOrders.push({
+            id: employeeWeeklyOrder.id,
+            employeeId: employeeWeeklyOrder.employeeId,
+            dayOfWeek: employeeWeeklyOrder.dayOfWeek,
+            orderItemId: employeeWeeklyOrder.orderItemId,
+            order: orderItem ?? [],
+            dish: null,
+          });
         }
+      } else {
+        weeklyOrders.push({
+          id: null,
+          employeeId: (employee as { id: number }).id,
+          dayOfWeek: currentDay,
+          orderItemId: null,
+          order: [],
+          dish: null,
+        });
       }
+
+      const employeeTyped = employee as {
+        id: number;
+        name: string;
+        profileImage?: string | null;
+      };
+      result.push({
+        id: employeeTyped.id,
+        name: employeeTyped.name,
+        profileImage: employeeTyped.profileImage ?? null,
+        weeklyOrders,
+      });
     }
 
     return {
