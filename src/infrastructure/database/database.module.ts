@@ -14,35 +14,35 @@ import { employeeWeeklyOrdersProvider } from '../providers/employee-weekly-order
 import { companyOrderProvider } from '../providers/company-order.provider';
 
 @Module({
-    providers:[
-        CompanyRepository, 
-        DishRepository, 
-        EmployeeRepository, 
-        RestaurantRepository, 
-        UserRepository,
-        ...companyProvider, 
-        ...databaseProvider, 
-        ...dishProvider, 
-        ...employeeProvider, 
-        ...restaurantProvider,
-        ...userProvider,
-        ...employeeWeeklyOrdersProvider,
-        ...companyOrderProvider
-    ],
-    exports:[
-        CompanyRepository, 
-        DishRepository, 
-        EmployeeRepository, 
-        RestaurantRepository,
-        UserRepository,
-        ...companyProvider, 
-        ...databaseProvider, 
-        ...dishProvider, 
-        ...employeeProvider, 
-        ...restaurantProvider,
-        ...userProvider,
-        ...employeeWeeklyOrdersProvider,
-        ...companyOrderProvider
-    ]
+  providers: [
+    CompanyRepository,
+    DishRepository,
+    EmployeeRepository,
+    RestaurantRepository,
+    UserRepository,
+    ...companyProvider,
+    ...databaseProvider,
+    ...dishProvider,
+    ...employeeProvider,
+    ...restaurantProvider,
+    ...userProvider,
+    ...employeeWeeklyOrdersProvider,
+    ...companyOrderProvider,
+  ],
+  exports: [
+    CompanyRepository,
+    DishRepository,
+    EmployeeRepository,
+    RestaurantRepository,
+    UserRepository,
+    ...companyProvider,
+    ...databaseProvider,
+    ...dishProvider,
+    ...employeeProvider,
+    ...restaurantProvider,
+    ...userProvider,
+    ...employeeWeeklyOrdersProvider,
+    ...companyOrderProvider,
+  ],
 })
 export class DatabaseModule {}

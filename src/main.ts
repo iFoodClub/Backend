@@ -5,10 +5,17 @@ import { ValidationPipe } from '@nestjs/common';
 import { CreateEmployeeUserDto } from './interfaces/http/dtos/request/createEmployeeUser.dto';
 import { CreateRestaurantUserDto } from './interfaces/http/dtos/request/createRestaurantUser.dto';
 import { CreateCompanyUserDto } from './interfaces/http/dtos/request/createCompanyUser.dto';
+import { CloudWatchLoggerService } from './infrastructure/services/cloudwatch-logger.service';
 
 async function bootstrap() {
   const port = process.env.PORT ? parseInt(process.env.PORT) : 3000;
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create(AppModule, {
+    bufferLogs: true,
+  });
+
+  // Configurar CloudWatch Logger
+  const logger = app.get(CloudWatchLoggerService);
+  app.useLogger(logger);
 
   // Habilitando CORS
   app.enableCors();
