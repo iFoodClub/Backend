@@ -69,47 +69,23 @@ export class CreateOrdersFromWeeklyOrdersUseCase {
     }
 
     const currentDay = this.getCurrentDayOfWeek();
-    
+
     // Verificar se já existem pedidos individuais pendentes para hoje
-    const existingPendingOrders = await this.individualOrderRepository.listByCompanyOrderIdNull(companyId);
+    const existingPendingOrders =
+      await this.individualOrderRepository.listByCompanyOrderIdNull(companyId);
     if (existingPendingOrders.length > 0) {
       throw new BadRequestException(
-        `Já existem ${existingPendingOrders.length} pedido(s) pendente(s) para hoje. Finalize ou cancele os pedidos existentes antes de criar novos.`
+        `Já existem ${existingPendingOrders.length} pedido(s) pendente(s) para hoje. Finalize ou cancele os pedidos existentes antes de criar novos.`,
       );
     }
 
-    // Validar se TODOS os funcionários têm pedidos semanais preenchidos para o dia atual
-    const employeesWithoutWeeklyOrder: string[] = [];
-
-    for (const employee of employees) {
-      const weeklyOrder =
-        await this.employeeWeeklyOrdersRepository.findByEmployeeAndDay(
-          employee.id,
-          currentDay,
-        );
-
-      if (!weeklyOrder || !weeklyOrder.orderItemId) {
-        employeesWithoutWeeklyOrder.push(
-          employee.name || `Funcionário ID ${employee.id}`,
-        );
-      }
-    }
-
-    // Se algum funcionário não tiver pedido preenchido, retornar erro
-    if (employeesWithoutWeeklyOrder.length > 0) {
-      throw new BadRequestException(
-        `Nem todos os funcionários preencheram seus pedidos semanais para ${currentDay}. ` +
-          `Funcionários sem pedido: ${employeesWithoutWeeklyOrder.join(', ')}`,
-      );
-    }
-
-    // Se todos têm pedidos, criar os pedidos individuais
+    // Criar pedidos individuais apenas para funcionários que têm pedidos semanais
     let ordersCreated = 0;
     let restaurantId: number | null = null;
     const createdOrderIds: number[] = [];
 
     for (const employee of employees) {
-      // Buscar os pedidos do dia atual (já validado que existe)
+      // Buscar os pedidos do dia atual
       const weeklyOrder =
         await this.employeeWeeklyOrdersRepository.findByEmployeeAndDay(
           employee.id,
@@ -159,7 +135,7 @@ export class CreateOrdersFromWeeklyOrdersUseCase {
       );
     }
 
-    // Criar pedido da empresa (já validado que todos têm pedidos)
+    // Criar pedido da empresa
     const companyOrder = await this.companyOrderRepository.create({
       companyId: companyId,
       restaurantId: restaurantId || company.restaurantId,
@@ -177,7 +153,7 @@ export class CreateOrdersFromWeeklyOrdersUseCase {
     }
 
     return {
-      message: `Pedidos criados com sucesso baseados nos pedidos semanais de ${currentDay}`,
+      message: `Pedidos criados com sucesso baseados nos pedidos semanais de ${currentDay}. ${ordersCreated} pedido(s) criado(s) de ${employees.length} funcionário(s).`,
       ordersCreated,
       currentDay,
     };
