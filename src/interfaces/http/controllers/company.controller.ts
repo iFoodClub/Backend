@@ -410,7 +410,8 @@ export class CompanyController {
   })
   @ApiResponse({
     status: 400,
-    description: 'Nem todos os funcionários preencheram seus pedidos semanais',
+    description:
+      'Erro ao criar pedidos (ex: já existem pedidos pendentes, nenhum pedido foi criado, restaurante não identificado)',
     type: Http400,
   })
   @ApiResponse({

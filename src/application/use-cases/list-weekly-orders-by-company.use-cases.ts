@@ -170,12 +170,12 @@ export class ListWeeklyOrdersByCompanyService {
       id: number;
       name: string;
       profileImage: string;
-      order: {
+      order: Array<{
         id: number;
         name: string;
         price: number;
         image: string;
-      };
+      }>;
     }>;
   }> {
     const company = await this.companyRepository.getById(companyId);
@@ -190,12 +190,12 @@ export class ListWeeklyOrdersByCompanyService {
       id: number;
       name: string;
       profileImage: string;
-      order: {
+      order: Array<{
         id: number;
         name: string;
         price: number;
         image: string;
-      };
+      }>;
     }> = [];
 
     let restaurantData: {
@@ -211,6 +211,18 @@ export class ListWeeklyOrdersByCompanyService {
           employee.id,
           currentDay,
         );
+
+      // Buscar informações do funcionário
+      const employeeUser = await this.userRepository.getById(
+        employee.userId,
+      );
+
+      const orderData: Array<{
+        id: number;
+        name: string;
+        price: number;
+        image: string;
+      }> = [];
 
       if (employeeWeeklyOrder && employeeWeeklyOrder.orderItemId) {
         const orderItem = await this.orderItemRepository.findByPk(
@@ -238,26 +250,23 @@ export class ListWeeklyOrdersByCompanyService {
               }
             }
 
-            // Buscar informações do funcionário
-            const employeeUser = await this.userRepository.getById(
-              employee.userId,
-            );
-
-            // Adicionar funcionário à lista
-            employeesList.push({
-              id: employee.id,
-              name: employee.name,
-              profileImage: employeeUser?.profileImage || '',
-              order: {
-                id: dish.id,
-                name: dish.name,
-                price: dish.price,
-                image: dish.image || '',
-              },
+            orderData.push({
+              id: dish.id,
+              name: dish.name,
+              price: dish.price,
+              image: dish.image || '',
             });
           }
         }
       }
+
+      // Adicionar funcionário à lista (mesmo sem pedido)
+      employeesList.push({
+        id: employee.id,
+        name: employee.name,
+        profileImage: employeeUser?.profileImage || '',
+        order: orderData,
+      });
     }
 
     return {
