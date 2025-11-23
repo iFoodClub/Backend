@@ -26,6 +26,12 @@ export class MetricsInterceptor implements NestInterceptor {
     const { method, url } = request;
     const startTime = Date.now();
 
+    // Ignorar health checks para não poluir logs/métricas
+    const isHealthCheck = url === '/health-check' || url === '/health';
+    if (isHealthCheck) {
+      return next.handle();
+    }
+
     return next.handle().pipe(
       tap(async () => {
         const response = context.switchToHttp().getResponse();
