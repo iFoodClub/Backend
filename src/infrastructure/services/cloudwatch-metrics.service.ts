@@ -30,10 +30,19 @@ export class CloudWatchMetricsService {
     const awsAccessKey = this.configService.get<string>(
       'AWS_ACCESS_KEY_ID_CLOUDWATCH',
     );
-    this.isEnabled = !!awsAccessKey;
+    const awsSecretKey = this.configService.get<string>(
+      'AWS_SECRET_ACCESS_KEY_CLOUDWATCH',
+    );
+    this.isEnabled = !!(awsAccessKey && awsSecretKey);
 
     if (this.isEnabled) {
-      this.client = new CloudWatchClient({ region });
+      this.client = new CloudWatchClient({
+        region,
+        credentials: {
+          accessKeyId: awsAccessKey,
+          secretAccessKey: awsSecretKey,
+        },
+      });
     }
   }
 

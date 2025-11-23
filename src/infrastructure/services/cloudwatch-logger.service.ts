@@ -33,10 +33,19 @@ export class CloudWatchLoggerService implements LoggerService {
     const awsAccessKey = this.configService.get<string>(
       'AWS_ACCESS_KEY_ID_CLOUDWATCH',
     );
-    this.isEnabled = !!awsAccessKey;
+    const awsSecretKey = this.configService.get<string>(
+      'AWS_SECRET_ACCESS_KEY_CLOUDWATCH',
+    );
+    this.isEnabled = !!(awsAccessKey && awsSecretKey);
 
     if (this.isEnabled) {
-      this.client = new CloudWatchLogsClient({ region });
+      this.client = new CloudWatchLogsClient({
+        region,
+        credentials: {
+          accessKeyId: awsAccessKey,
+          secretAccessKey: awsSecretKey,
+        },
+      });
       void this.initialize();
 
       // Flush logs a cada 5 segundos
