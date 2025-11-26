@@ -31,53 +31,56 @@ src/
             └── audit-log.controller.ts  # Endpoints REST
 ```
 
-## 🚀 Configuração AWS DocumentDB
+## 🚀 Configuração MongoDB Atlas (RECOMENDADO - GRÁTIS!)
 
-### 1. Criar Cluster DocumentDB
+### 1. Pegar Connection String do Atlas
 
-```bash
-# Via AWS Console:
-1. AWS Console → DocumentDB → Create cluster
-2. Cluster identifier: foodclub-audit
-3. Master username: foodclub_admin
-4. Master password: [sua senha segura]
-5. Instance class: db.t3.medium (free tier eligible)
-6. Number of instances: 1
-7. VPC: Same VPC as Elastic Beanstalk (importante!)
-8. Security group: Permitir porta 27017 do Beanstalk
-```
+1. Acesse https://cloud.mongodb.com/
+2. Seu cluster → **Connect** → **Connect your application**
+3. Driver: **Node.js** versão **5.5 or later**
+4. Copie a connection string:
+   ```
+   mongodb+srv://<username>:<password>@cluster0.xxxxx.mongodb.net/?retryWrites=true&w=majority
+   ```
 
-### 2. Baixar Certificado SSL
+### 2. Permitir Acesso do Render/Beanstalk
 
-```bash
-# No seu projeto:
-wget https://truststore.pki.rds.amazonaws.com/global/global-bundle.pem -O rds-combined-ca-bundle.pem
-```
+1. Atlas → **Network Access** → **Add IP Address**
+2. Adicione:
+   - `0.0.0.0/0` (permite qualquer IP - mais fácil)
+   - Ou IPs específicos do Render/Beanstalk (mais seguro)
 
 ### 3. Configurar Variáveis de Ambiente
 
-**Render (.env ou Dashboard):**
+**Render Dashboard ou .env:**
 ```env
-DOCUMENTDB_URI=mongodb://foodclub_admin:sua_senha@foodclub-audit.cluster-xxxxx.us-east-1.docdb.amazonaws.com:27017/?tls=true&replicaSet=rs0&readPreference=secondaryPreferred&retryWrites=false
-DOCUMENTDB_CA_FILE=./rds-combined-ca-bundle.pem
+# Substitua <username>, <password> e cluster0.xxxxx pelos seus valores
+DOCUMENTDB_URI=mongodb+srv://foodclub_user:sua_senha@cluster0.xxxxx.mongodb.net/foodclub-audit?retryWrites=true&w=majority
+# NÃO precisa de DOCUMENTDB_CA_FILE para Atlas!
 ```
 
 **Elastic Beanstalk:**
 ```bash
 # Configuration → Software → Environment properties
-DOCUMENTDB_URI=mongodb://foodclub_admin:sua_senha@foodclub-audit.cluster-xxxxx.sa-east-1.docdb.amazonaws.com:27017/?tls=true&replicaSet=rs0&readPreference=secondaryPreferred&retryWrites=false
-DOCUMENTDB_CA_FILE=/var/app/current/rds-combined-ca-bundle.pem
+DOCUMENTDB_URI=mongodb+srv://foodclub_user:sua_senha@cluster0.xxxxx.mongodb.net/foodclub-audit?retryWrites=true&w=majority
 ```
 
-### 4. Atualizar Security Group
+### 4. Usar Banco Existente (PODE!)
 
-No DocumentDB, permita conexões da porta 27017 vindo do Security Group do Elastic Beanstalk:
+Se você já tem um banco no cluster:
+- **Opção 1**: Usar o mesmo banco
+  ```
+  mongodb+srv://...mongodb.net/seu-banco-existente?...
+  ```
+  → Adiciona collection `auditlogs` automaticamente
 
-```
-Type: Custom TCP
-Port Range: 27017
-Source: [Security Group do Beanstalk]
-```
+- **Opção 2**: Criar banco separado (recomendado)
+  ```
+  mongodb+srv://...mongodb.net/foodclub-audit?...
+  ```
+  → Melhor organização
+
+**Sem problema usar banco existente!** Mongoose cria as collections automaticamente.
 
 ## 📝 Como Usar
 
@@ -231,14 +234,3 @@ DOCUMENTDB_URI=mongodb://localhost:27017/foodclub-audit
 2. Criar cluster gratuito
 3. Pegar connection string
 4. Atualizar `DOCUMENTDB_URI`
-
-## ✅ Checklist
-
-- [ ] `npm install` executado
-- [ ] Cluster DocumentDB criado na AWS
-- [ ] Security Group configurado
-- [ ] Certificado SSL baixado
-- [ ] Variáveis de ambiente configuradas
-- [ ] Deploy realizado
-- [ ] Testar endpoint `/audit-logs`
-- [ ] Registrar evento manualmente para validar

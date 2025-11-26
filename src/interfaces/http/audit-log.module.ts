@@ -12,12 +12,22 @@ import { AuditLogController } from './controllers/audit-log.controller';
   imports: [
     MongooseModule.forRootAsync({
       imports: [ConfigModule],
-      useFactory: (configService: ConfigService) => ({
-        uri: configService.get<string>('DOCUMENTDB_URI'),
-        tls: true,
-        tlsCAFile: configService.get<string>('DOCUMENTDB_CA_FILE'),
-        retryWrites: false, // DocumentDB não suporta retryWrites
-      }),
+      useFactory: (configService: ConfigService) => {
+        const uri = configService.get<string>('DOCUMENTDB_URI');
+        
+        // MongoDB Atlas não precisa de configuração SSL adicional
+        // DocumentDB (AWS) precisaria de tlsCAFile
+        const isAtlas = uri?.includes('mongodb.net');
+        
+        return {
+          uri,
+          ...(isAtlas ? {} : {
+            tls: true,
+            tlsCAFile: configService.get<string>('DOCUMENTDB_CA_FILE'),
+            retryWrites: false,
+          }),
+        };
+      },
       inject: [ConfigService],
     }),
     MongooseModule.forFeature([
