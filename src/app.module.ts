@@ -25,11 +25,13 @@ import { UploadModule } from './interfaces/http/upload.module';
 import { ObservabilityModule } from './interfaces/http/observability.module';
 import { APP_INTERCEPTOR } from '@nestjs/core';
 import { MetricsInterceptor } from './infrastructure/observability/metrics.interceptor';
+import { AuditLogModule } from './interfaces/http/audit-log.module';
 
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
     ObservabilityModule,
+    AuditLogModule,
     CompanyModule,
     DishModule,
     DatabaseModule,
