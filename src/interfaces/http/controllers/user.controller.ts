@@ -37,6 +37,7 @@ import { LoginDto } from 'src/interfaces/http/dtos/request/login.dto';
 import { LoginResponseDto } from 'src/interfaces/http/dtos/response/login.dto';
 import { AuthService } from '../../../application/use-cases/login.use-cases';
 import { JwtAuthGuard } from '../../../infrastructure/guards/jwt-auth.guard';
+import { UserOwnershipGuard } from '../../../infrastructure/guards/user-ownership.guard';
 import { GetUserByEmailService } from '../../../application/use-cases/get-byemail.use-cases';
 import { UserLoginEntityInterface } from 'src/domain/repositories/user-login.repository.interface';
 import { UpdateUserImageDto } from '../dtos/request/updateUserImage.dto';
@@ -352,7 +353,7 @@ export class UserController {
   }
 
   @Put('image/:id')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, UserOwnershipGuard)
   @ApiBearerAuth('JWT-auth')
   @ApiParam({
     name: 'id',
@@ -406,7 +407,7 @@ export class UserController {
   }
 
   @Put('password/:id')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, UserOwnershipGuard)
   @ApiBearerAuth('JWT-auth')
   @ApiParam({
     name: 'id',
@@ -468,7 +469,7 @@ export class UserController {
   }
 
   @Delete(':id')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, UserOwnershipGuard)
   @ApiBearerAuth('JWT-auth')
   @ApiParam({
     name: 'id',

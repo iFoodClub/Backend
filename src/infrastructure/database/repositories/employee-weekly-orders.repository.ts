@@ -52,6 +52,10 @@ export class EmployeeWeeklyOrdersRepository {
     return await this.employeeWeeklyOrdersEntity.findByPk(id);
   }
 
+  async findAll(): Promise<EmployeeWeeklyOrdersEntityInterface[]> {
+    return await this.employeeWeeklyOrdersEntity.findAll();
+  }
+
   async delete(id: number): Promise<void> {
     await this.employeeWeeklyOrdersEntity.destroy({
       where: { id },
