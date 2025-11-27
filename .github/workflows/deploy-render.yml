@@ -1,0 +1,25 @@
+name: Deploy to Render
+
+on:
+  push:
+    branches:
+      - development
+  pull_request:
+    types: [closed]
+    branches:
+      - development
+
+jobs:
+  deploy:
+    # Só executa se o PR foi merged (não apenas fechado)
+    if: github.event_name == 'push' || github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Trigger Render Deploy
+        run: |
+          curl -X POST ${{ secrets.RENDER_DEPLOY_HOOK }}
+        
+      - name: Notify Deploy Started
+        run: |
+          echo "Deploy disparado no Render para a branch development"
