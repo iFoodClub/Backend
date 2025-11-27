@@ -1,3 +1,6 @@
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
+/* eslint-disable @typescript-eslint/no-unsafe-argument */
+/* eslint-disable @typescript-eslint/no-unsafe-member-access */
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { Inject } from '@nestjs/common';
 import { EmployeeWeeklyOrderResponse } from 'src/interfaces/http/dtos/response/employeeWeeklyOrder.dto';
@@ -27,22 +30,25 @@ export class GetWeeklyOrdersByEmployeeService {
       throw new NotFoundException('Funcionário não encontrado');
     }
 
-    const employeeWeeklyOrders = await this.employeeWeeklyOrdersRepository.findByEmployeeId(employeeId);
-    
+    const employeeWeeklyOrders =
+      await this.employeeWeeklyOrdersRepository.findByEmployeeId(employeeId);
+
     // Criar um mapa dos pedidos existentes por dia da semana
     const ordersMap = new Map<DayOfWeek, EmployeeWeeklyOrdersEntityInterface>();
-    
+
     for (const employeeWeeklyOrder of employeeWeeklyOrders) {
       let orderItems = null;
       let dish = null;
-      
+
       if (employeeWeeklyOrder.orderItemId) {
-        orderItems = await this.orderItemRepository.findByPk(employeeWeeklyOrder.orderItemId);
+        orderItems = await this.orderItemRepository.findByPk(
+          employeeWeeklyOrder.orderItemId,
+        );
         if (orderItems?.dishId) {
           dish = await this.dishRepository.getById(orderItems.dishId);
         }
       }
-      
+
       ordersMap.set(employeeWeeklyOrder.dayOfWeek, {
         id: employeeWeeklyOrder.id,
         employeeId: employeeWeeklyOrder.employeeId,
@@ -50,6 +56,8 @@ export class GetWeeklyOrdersByEmployeeService {
         orderItemId: employeeWeeklyOrder.orderItemId,
         order: orderItems,
         dish: dish,
+        createdAt: undefined,
+        updatedAt: undefined,
       });
     }
 
@@ -67,7 +75,7 @@ export class GetWeeklyOrdersByEmployeeService {
     // Retornar todos os dias da semana, preenchendo com dados do pedido se existir
     return allDaysOfWeek.map((dayOfWeek) => {
       const order = ordersMap.get(dayOfWeek);
-      
+
       if (order) {
         return {
           id: order.id,
@@ -99,4 +107,4 @@ export class GetWeeklyOrdersByEmployeeService {
       }
     });
   }
-} 
+}

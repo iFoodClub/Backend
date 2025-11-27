@@ -5,9 +5,12 @@ import { employeeWeeklyOrdersProvider } from 'src/infrastructure/providers/emplo
 import { employeeProvider } from 'src/infrastructure/providers/employee.provider';
 import { individualOrderProvider } from 'src/infrastructure/providers/individual-order.provider';
 import { orderItemProvider } from 'src/infrastructure/providers/order-item.provider';
+import { dishProvider } from 'src/infrastructure/providers/dish.provider';
+import { userProvider } from 'src/infrastructure/providers/user.provider';
 import { CreateOrUpdateWeeklyOrderService } from 'src/application/use-cases/create-or-update-weekly-order.use-cases';
 import { DeleteWeeklyOrderService } from 'src/application/use-cases/delete-weekly-order.use-cases';
 import { GetWeeklyOrdersByEmployeeService } from 'src/application/use-cases/get-weekly-orders-by-employee.use-cases';
+import { ListAllWeeklyOrdersService } from 'src/application/use-cases/list-all-weekly-orders.use-cases';
 
 @Module({
   imports: [DatabaseModule],
@@ -17,14 +20,18 @@ import { GetWeeklyOrdersByEmployeeService } from 'src/application/use-cases/get-
     ...employeeProvider,
     ...individualOrderProvider,
     ...orderItemProvider,
+    ...dishProvider,
+    ...userProvider,
     CreateOrUpdateWeeklyOrderService,
     GetWeeklyOrdersByEmployeeService,
     DeleteWeeklyOrderService,
+    ListAllWeeklyOrdersService,
   ],
   exports: [
     CreateOrUpdateWeeklyOrderService,
     GetWeeklyOrdersByEmployeeService,
     DeleteWeeklyOrderService,
+    ListAllWeeklyOrdersService,
   ],
 })
 export class EmployeeWeeklyOrdersModule {}

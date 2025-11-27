@@ -225,9 +225,13 @@ export class CompanyController {
     }
   }
 
-  @UseGuards(JwtAuthGuard, UploadAuthorizationGuard, UploadOwnershipGuard)
+  @UseGuards(
+    JwtAuthGuard,
+    UploadAuthorizationGuard,
+    UploadOwnershipGuard,
+    SqlInjectionGuard,
+  )
   @Delete(':id')
-  @UseGuards(JwtAuthGuard, SqlInjectionGuard)
   @ApiBearerAuth('JWT-auth')
   @ApiParam({
     name: 'id',

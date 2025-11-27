@@ -10,6 +10,7 @@ import { GetEmployeeByIdService } from 'src/application/use-cases/get-employee-b
 import { ListEmployeesService } from 'src/application/use-cases/list-employees.use-cases';
 import { UpdateEmployeeService } from 'src/application/use-cases/update-employee.use-cases';
 import { AuthModule } from './auth.module';
+import { UploadAuthorizationGuard } from 'src/infrastructure/guards/upload-authorization.guard';
 import { UploadOwnershipGuard } from 'src/infrastructure/guards/upload-ownership.guard';
 import { CompanyRepository } from 'src/infrastructure/database/repositories/company.repository';
 import { companyProvider } from 'src/infrastructure/providers/company.provider';
@@ -35,6 +36,7 @@ import { dishProvider } from 'src/infrastructure/providers/dish.provider';
     CreateEmployeeService,
     UpdateEmployeeService,
     DeleteEmployeeService,
+    UploadAuthorizationGuard,
     UploadOwnershipGuard,
   ],
   exports: [

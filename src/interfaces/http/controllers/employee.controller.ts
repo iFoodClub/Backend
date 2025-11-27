@@ -202,7 +202,7 @@ export class EmployeeController {
   }
 
   @Delete(':id')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, UploadAuthorizationGuard, UploadOwnershipGuard)
   @ApiBearerAuth('JWT-auth')
   @ApiParam({
     name: 'id',
