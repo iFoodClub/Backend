@@ -116,7 +116,7 @@ jobs:
   deploy:
     name: Deploy to AWS
     needs: [build, version]
-    if: github.event_name == 'push' && github.ref == 'refs/heads/development'
+    if: false # Desabilitado - usando apenas Render
     runs-on: ubuntu-latest
     steps:
       - name: Determine Environment Name
