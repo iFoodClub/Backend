@@ -2,14 +2,31 @@
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
 import { Injectable } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
-import { ExtractJwt, Strategy } from 'passport-jwt';
+import { Strategy } from 'passport-jwt';
 import { ConfigService } from '@nestjs/config';
+
+function jwtFromRequest(req: { headers?: { authorization?: string } }): string | null {
+  const auth = req.headers?.authorization;
+  if (!auth || typeof auth !== 'string') {
+    return null;
+  }
+  const trimmed = auth.trim();
+  if (trimmed.toLowerCase().startsWith('bearer ')) {
+    return trimmed.slice(7).trim();
+  }
+  // Alguns clientes enviam só o JWT no header Authorization (sem prefixo Bearer)
+  const parts = trimmed.split('.');
+  if (parts.length === 3) {
+    return trimmed;
+  }
+  return null;
+}
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
   constructor(private configService: ConfigService) {
     super({
-      jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
+      jwtFromRequest,
       ignoreExpiration: false,
       secretOrKey: configService.get<string>('JWT_SECRET'),
     });

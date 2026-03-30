@@ -32,6 +32,14 @@ module.exports = {
         number: '789',
       }
     ]);
+
+    await queryInterface.sequelize.query(
+      `SELECT setval(
+        pg_get_serial_sequence('company', 'id'),
+        (SELECT MAX(id) FROM company),
+        true
+      );`,
+    );
   },
 
   async down(queryInterface, Sequelize) {

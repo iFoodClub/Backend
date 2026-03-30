@@ -26,6 +26,11 @@ export class CreateCompanyOrderUseCase {
   ) {}
 
   async execute(companyId: number): Promise<{ message: string; id: number }> {
+    const company = await this.companyRepository.getById(companyId);
+    if (!company) {
+      throw new NotFoundException('Empresa não encontrada');
+    }
+
     const createOrderDto =
       await this.individualOrderRepository.listByCompanyOrderIdNull(companyId);
 
@@ -34,15 +39,6 @@ export class CreateCompanyOrderUseCase {
       throw new NotFoundException(
         'Nenhum pedido individual pendente encontrado para esta empresa',
       );
-    }
-
-    // Validar se a empresa existe
-    const company = await this.companyRepository.getById(
-      createOrderDto[0].companyId,
-    );
-
-    if (!company) {
-      throw new NotFoundException('Empresa não encontrada');
     }
 
     // Validar se o restaurante existe

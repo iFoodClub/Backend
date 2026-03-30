@@ -19,8 +19,11 @@ export class GetDishByIdService {
     @Inject('RESTAURANT_REPOSITORY')
     private readonly restaurantRepository: RestaurantRepository
   ){}
-  async execute(id: number): Promise<DishEmployeeEntityInterface> {
+  async execute(id: number): Promise<DishEmployeeEntityInterface | null> {
      const dish = await this.dishRepository.getById(id);
+     if (!dish) {
+       return null;
+     }
      const restaurant = await this.restaurantRepository.getById(dish.restaurantId);
      const ratings = await this.dishRatingRepository.listByDish(dish.id);
      const ratingCount = ratings.length;

@@ -3,7 +3,7 @@
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
   async up(queryInterface, Sequelize) {
-    return queryInterface.bulkInsert('employee', [
+    await queryInterface.bulkInsert('employee', [
       {
         id: 1,
         userId: 10,
@@ -59,6 +59,14 @@ module.exports = {
         vacation: false,
       }
     ]);
+
+    await queryInterface.sequelize.query(
+      `SELECT setval(
+        pg_get_serial_sequence('employee', 'id'),
+        (SELECT MAX(id) FROM employee),
+        true
+      );`,
+    );
   },
 
   async down(queryInterface, Sequelize) {

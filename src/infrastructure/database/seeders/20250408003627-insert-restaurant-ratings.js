@@ -3,7 +3,7 @@
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
   async up(queryInterface, Sequelize) {
-    return queryInterface.bulkInsert('restaurant_rating', [
+    await queryInterface.bulkInsert('restaurant_rating', [
       // Avaliações para Sabores do Chef (ID: 1)
       {
         id: 1,
@@ -98,8 +98,16 @@ module.exports = {
         userId: 15,
         rating: 4,
         description: 'Muito bom churrasco americano. Ambiente descontraído e comida saborosa.',
-      }
+      },
     ]);
+
+    await queryInterface.sequelize.query(
+      `SELECT setval(
+        pg_get_serial_sequence('restaurant_rating', 'id'),
+        (SELECT COALESCE(MAX(id), 1) FROM restaurant_rating),
+        true
+      );`,
+    );
   },
 
   async down(queryInterface, Sequelize) {

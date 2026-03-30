@@ -1,16 +1,28 @@
-import { BadRequestException, Injectable } from "@nestjs/common";
+import { BadRequestException, Inject, Injectable } from "@nestjs/common";
 import { RestaurantInterface } from "../../domain/models/restaurant.model";
 import { RestaurantRepository } from 'src/infrastructure/database/repositories/restaurant.repository';
+import { UserType } from 'src/domain/repositories/user.repository.interface';
+import { UserProfileEligibilityService } from './user-profile-eligibility.service';
 
 @Injectable()
 export class CreateRestaurantService {
-    constructor(private restaurantRepository: RestaurantRepository){}
+    constructor(
+        @Inject('RESTAURANT_REPOSITORY')
+        private readonly restaurantRepository: RestaurantRepository,
+        private readonly userProfileEligibilityService: UserProfileEligibilityService,
+    ) {}
+
     async execute(restaurant: RestaurantInterface): Promise<void> {
+        await this.userProfileEligibilityService.assertEligibleForProfile(
+            restaurant.userId,
+            UserType.RESTAURANT,
+        );
+
         const validate = await this.validateUserCreateRestaurant(restaurant);
         if(!validate){
             throw new BadRequestException('Já existe um restaurante cadastrado com este CNPJ');
         }
-        this.restaurantRepository.create(restaurant);
+        await this.restaurantRepository.create(restaurant);
     }
     
     async validateUserCreateRestaurant(restaurant: RestaurantInterface): Promise<boolean> {

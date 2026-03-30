@@ -4,6 +4,7 @@ import {
   Body,
   Controller,
   Get,
+  NotFoundException,
   Param,
   Post,
   Res,
@@ -106,20 +107,60 @@ export class DishRatingControlller {
     description: 'Erro ao criar avaliação',
     type: Http400,
   })
+  @ApiResponse({
+    status: 404,
+    description: 'Prato não encontrado',
+    type: Http404,
+  })
   async create(
     @Body() dishRating: DishRatingEntityInterface,
     @Res() res: Response,
   ) {
-    const { dishId, userId, rating } = dishRating;
-    if (!(dishId && userId && rating)) {
+    const { dishId, userId, rating, description } = dishRating;
+
+    const isAbsent = (v: unknown): boolean =>
+      v === undefined || v === null;
+
+    if (isAbsent(dishId) || isAbsent(userId) || isAbsent(rating)) {
       res.status(400).json({
-        sucess: false,
-        message: 'Todos os campos são obrigatórios',
+        success: false,
+        message:
+          'Todos os campos são obrigatórios: envie dishId, userId e rating.',
       });
       return;
     }
-    await this.createDishRatingService.execute(dishRating);
-    res.send();
+
+    const numericRating = Number(rating);
+    if (
+      !Number.isInteger(numericRating) ||
+      numericRating < 1 ||
+      numericRating > 5
+    ) {
+      res.status(400).json({
+        success: false,
+        message: 'A nota (rating) deve ser um número inteiro entre 1 e 5.',
+      });
+      return;
+    }
+
+    try {
+      await this.createDishRatingService.execute({
+        dishId: Number(dishId),
+        userId: Number(userId),
+        rating: numericRating,
+        description,
+      });
+      res.status(201).send();
+    } catch (err) {
+      if (err instanceof NotFoundException) {
+        res.status(404).json({
+          success: false,
+          message: 'Prato não encontrado',
+        });
+        return;
+      }
+      throw err;
+    }
   }
 
   @Put(':id')

@@ -31,6 +31,7 @@ import { AuthModule } from './auth.module';
 import { UploadOwnershipGuard } from 'src/infrastructure/guards/upload-ownership.guard';
 import { RestaurantRepository } from 'src/infrastructure/database/repositories/restaurant.repository';
 import { restaurantProvider } from 'src/infrastructure/providers/restaurant.provider';
+import { UserProfileEligibilityService } from 'src/application/use-cases/user-profile-eligibility.service';
 
 @Module({
   imports: [DatabaseModule, AuthModule],
@@ -65,6 +66,7 @@ import { restaurantProvider } from 'src/infrastructure/providers/restaurant.prov
     CreateCompanyOrderUseCase,
     ListWeeklyOrdersByCompanyService,
     CreateOrdersFromWeeklyOrdersUseCase,
+    UserProfileEligibilityService,
   ],
   exports: [
     ListCompaniesService,

@@ -29,6 +29,8 @@ import { EmployeeRepository } from 'src/infrastructure/database/repositories/emp
 import { DishRepository } from 'src/infrastructure/database/repositories/dish.repository';
 import { AuthModule } from './auth.module';
 import { UploadOwnershipGuard } from 'src/infrastructure/guards/upload-ownership.guard';
+import { UserRepository } from 'src/infrastructure/database/repositories/user.repository';
+import { UserProfileEligibilityService } from 'src/application/use-cases/user-profile-eligibility.service';
 
 @Module({
   imports: [DatabaseModule, AuthModule],
@@ -47,6 +49,8 @@ import { UploadOwnershipGuard } from 'src/infrastructure/guards/upload-ownership
     CompanyRepository,
     EmployeeRepository,
     DishRepository,
+    UserRepository,
+    UserProfileEligibilityService,
     UploadOwnershipGuard,
     ListRestaurantService,
     GetRestaurantByIdService,

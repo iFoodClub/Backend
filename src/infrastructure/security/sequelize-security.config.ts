@@ -13,17 +13,15 @@ export class SequelizeSecurityConfig {
       (sequelize as any).options.logging = false;
     }
 
-    // Configurações de segurança adicionais
-    (sequelize as any).options.dialectOptions = {
+    const useSsl = process.env.DB_SSL !== 'false';
+    const dialectOpts: Record<string, unknown> = {
       ...(sequelize as any).options.dialectOptions,
-      // Força uso de prepared statements
       prepare: true,
-      // Configurações SSL
-      ssl: {
-        require: true,
-        rejectUnauthorized: false
-      }
     };
+    if (useSsl) {
+      dialectOpts.ssl = { require: true, rejectUnauthorized: false };
+    }
+    (sequelize as any).options.dialectOptions = dialectOpts;
 
     // Hook para sanitizar queries antes da execução
     sequelize.addHook('beforeQuery', (options: any) => {

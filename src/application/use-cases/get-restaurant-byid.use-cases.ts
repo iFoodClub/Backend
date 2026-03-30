@@ -20,8 +20,11 @@ export class GetRestaurantByIdService {
     @Inject('USER_REPOSITORY')
     private readonly userRepository: UserRepository
   ){}
-  async execute(id: number): Promise<RestaurantInterface> {
+  async execute(id: number): Promise<RestaurantInterface | null> {
     const restaurant = await this.restaurantRepository.getById(id);
+    if (!restaurant) {
+      return null;
+    }
     const dishes = await this.dishRepository.listByRestaurant(id)
     const restaurantRatings = await this.restaurantRatingRepository.listByRestaurant(id).then(ratings => {
       return ratings.map(rating => ({

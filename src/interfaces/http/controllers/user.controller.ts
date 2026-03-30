@@ -9,6 +9,7 @@ import {
   HttpCode,
   HttpStatus,
   Param,
+  ParseIntPipe,
   Post,
   Put,
   Res,
@@ -44,6 +45,12 @@ import { UpdateUserImageDto } from '../dtos/request/updateUserImage.dto';
 import { UpdateUserPasswordDto } from '../dtos/request/updateUserPassword.dto';
 import { SqlInjectionGuard } from '../../../infrastructure/security/sql-injection.guard';
 import { InputValidationPipe } from '../../../infrastructure/security/input-validation.pipe';
+import { ValidationError } from 'sequelize';
+
+const USER_ID_PARSE_PIPE = new ParseIntPipe({
+  exceptionFactory: () =>
+    new BadRequestException('ID deve ser um número inteiro válido'),
+});
 
 @ApiTags('User API')
 @Controller('user')
@@ -99,7 +106,14 @@ export class UserController {
     status: 401,
     description: 'Não autorizado',
   })
-  async getById(@Param('id') id: number): Promise<UserLoginEntityInterface> {
+  @ApiResponse({
+    status: 400,
+    description: 'ID inválido (deve ser um número inteiro)',
+    type: Http400,
+  })
+  async getById(
+    @Param('id', USER_ID_PARSE_PIPE) id: number,
+  ): Promise<UserLoginEntityInterface> {
     return await this.getUserByIdService.execute(id);
   }
 
@@ -285,6 +299,36 @@ export class UserController {
         return;
       }
 
+      const allowedUserTypes = Object.values(UserType) as string[];
+      if (!allowedUserTypes.includes(userType as string)) {
+        res.status(400).json({
+          success: false,
+          message:
+            'userType inválido. Valores permitidos: company, employee, restaurant',
+        });
+        return;
+      }
+
+      const passwordMinLength = 8;
+      const passwordMaxLength = 100;
+      if (
+        typeof password !== 'string' ||
+        password.length < passwordMinLength
+      ) {
+        res.status(400).json({
+          success: false,
+          message: `A senha deve ter pelo menos ${passwordMinLength} caracteres`,
+        });
+        return;
+      }
+      if (password.length > passwordMaxLength) {
+        res.status(400).json({
+          success: false,
+          message: `A senha deve ter no máximo ${passwordMaxLength} caracteres`,
+        });
+        return;
+      }
+
       // Validação específica por tipo de usuário
       if (userType === UserType.EMPLOYEE) {
         if (
@@ -342,13 +386,31 @@ export class UserController {
           success: false,
           message: error.message,
         });
-      } else {
-        console.error('Erro ao criar usuário:', error);
-        res.status(500).json({
-          success: false,
-          message: error?.message || 'Erro interno do servidor',
-        });
+        return;
       }
+      if (error instanceof ValidationError) {
+        const first = error.errors?.[0];
+        let message = first?.message ?? error.message;
+        if (first?.path === 'email' && first?.validatorKey === 'isEmail') {
+          message = 'Email deve ter um formato válido';
+        }
+        if (
+          first?.path === 'password' &&
+          (first?.validatorKey === 'len' || first?.validatorKey === 'min')
+        ) {
+          message = 'A senha deve ter pelo menos 8 caracteres';
+        }
+        res.status(400).json({
+          success: false,
+          message,
+        });
+        return;
+      }
+      console.error('Erro ao criar usuário:', error);
+      res.status(500).json({
+        success: false,
+        message: error?.message || 'Erro interno do servidor',
+      });
     }
   }
 
@@ -379,7 +441,7 @@ export class UserController {
     description: 'Não autorizado',
   })
   async updateImage(
-    @Param('id') id: number,
+    @Param('id', USER_ID_PARSE_PIPE) id: number,
     @Body() user: UserInterface,
     @Res() res: Response,
   ): Promise<void> {
@@ -388,7 +450,7 @@ export class UserController {
     const invalidFields = receivedFields.filter(
       (field) => !expectedFields.includes(field),
     );
-    const userUpdated = await this.updateUserService.execute(Number(id), user);
+    const userUpdated = await this.updateUserService.execute(id, user);
     if (!userUpdated) {
       res.status(404).json({
         success: false,
@@ -438,7 +500,7 @@ export class UserController {
     description: 'Não autorizado',
   })
   async updatePassword(
-    @Param('id') id: number,
+    @Param('id', USER_ID_PARSE_PIPE) id: number,
     @Body() user: UserInterface,
     @Res() res: Response,
   ): Promise<void> {
@@ -454,15 +516,8 @@ export class UserController {
       });
       return;
     }
-    const userData = await this.getUserByIdService.execute(Number(id));
-    if (!userData) {
-      res.status(404).json({
-        success: false,
-        message: 'Usuário não encontrado',
-      });
-      return;
-    }
-    const userUpdated = await this.updateUserService.execute(Number(id), {
+    await this.getUserByIdService.execute(id);
+    const userUpdated = await this.updateUserService.execute(id, {
       password: user.password,
     });
     res.status(200).json(userUpdated);
@@ -490,7 +545,7 @@ export class UserController {
     status: 401,
     description: 'Não autorizado',
   })
-  async delete(@Param('id') id: number): Promise<void> {
+  async delete(@Param('id', USER_ID_PARSE_PIPE) id: number): Promise<void> {
     await this.deleteUserService.execute(id);
   }
 
@@ -508,6 +563,11 @@ export class UserController {
   @ApiResponse({
     status: 401,
     description: 'Credenciais inválidas',
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Email ou senha com formato inválido',
+    type: Http400,
   })
   async login(@Body() body: LoginDto) {
     const { token, userDetails } = await this.authService.login(

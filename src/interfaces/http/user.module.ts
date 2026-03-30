@@ -13,7 +13,6 @@ import { CompanyRepository } from 'src/infrastructure/database/repositories/comp
 import { RestaurantRepository } from 'src/infrastructure/database/repositories/restaurant.repository';
 import { EmployeeWeeklyOrdersRepository } from 'src/infrastructure/database/repositories/employee-weekly-orders.repository';
 import { IndividualOrderRepository } from 'src/infrastructure/database/repositories/individual-order.repository';
-import { JwtService } from '@nestjs/jwt';
 import { AuthModule } from './auth.module';
 import { CreateCompanyService } from 'src/application/use-cases/create-company.use-cases';
 import { CreateEmployeeService } from 'src/application/use-cases/create-employee.use-cases';
@@ -25,6 +24,7 @@ import { GetUserByIdService } from 'src/application/use-cases/get-user-byid.use-
 import { ListUsersService } from 'src/application/use-cases/list-users.use-cases';
 import { AuthService } from 'src/application/use-cases/login.use-cases';
 import { UpdateUserService } from 'src/application/use-cases/update-user.use-cases';
+import { UserProfileEligibilityService } from 'src/application/use-cases/user-profile-eligibility.service';
 
 @Module({
   imports: [DatabaseModule, AuthModule],
@@ -49,10 +49,10 @@ import { UpdateUserService } from 'src/application/use-cases/update-user.use-cas
     DeleteUserService,
     GetUserByEmailService,
     AuthService,
-    JwtService,
     CreateEmployeeService,
     CreateCompanyService,
     CreateRestaurantService,
+    UserProfileEligibilityService,
   ],
   exports: [
     ListUsersService,
@@ -62,7 +62,6 @@ import { UpdateUserService } from 'src/application/use-cases/update-user.use-cas
     DeleteUserService,
     GetUserByEmailService,
     AuthService,
-    JwtService,
     CreateEmployeeService,
     CreateCompanyService,
     CreateRestaurantService,

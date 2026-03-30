@@ -4,6 +4,7 @@ import {
   Body,
   Controller,
   Get,
+  NotFoundException,
   Param,
   Post,
   Res,
@@ -21,6 +22,7 @@ import { ApiTags, ApiResponse, ApiParam, ApiBody } from '@nestjs/swagger';
 import { ListRestaurantAverageRatingDtoResponse } from '../dtos/response/listRestaurantAverageRating.dto';
 import { ListRestaurantAverageRatingByUserDtoResponse } from '../dtos/response/listRestaurantAverageRatingByUser.dto';
 import { CreateRestaurantRatingDto } from '../dtos/request/createRestaurantRating.dto';
+import { Http404 } from '../dtos/response/http404';
 
 @ApiTags('Restaurant Rating API')
 @Controller('restaurant-rating')
@@ -110,20 +112,75 @@ export class RestaurantRatingController {
     status: 400,
     description: 'Erro ao criar avaliação',
   })
+  @ApiResponse({
+    status: 404,
+    description: 'Restaurante não encontrado',
+    type: Http404,
+  })
   async create(
     @Body() restaurantRating: RestaurantRatingEntityInterface,
     @Res() res: Response,
   ) {
     const { restaurantId, userId, rating, description } = restaurantRating;
-    if (!(restaurantId && userId && rating && description)) {
+
+    const isAbsent = (v: unknown): boolean =>
+      v === undefined || v === null;
+
+    if (
+      isAbsent(restaurantId) ||
+      isAbsent(userId) ||
+      isAbsent(rating) ||
+      isAbsent(description)
+    ) {
       res.status(400).json({
-        sucess: false,
-        message: 'Todos os campos são obrigatórios',
+        success: false,
+        message:
+          'Todos os campos são obrigatórios: envie restaurantId, userId, rating e description.',
       });
       return;
     }
-    await this.createRestaurantRatingService.execute(restaurantRating);
-    res.status(201).send();
+
+    const numericRating = Number(rating);
+    if (
+      !Number.isInteger(numericRating) ||
+      numericRating < 1 ||
+      numericRating > 5
+    ) {
+      res.status(400).json({
+        success: false,
+        message: 'A nota (rating) deve ser um número inteiro entre 1 e 5.',
+      });
+      return;
+    }
+
+    const desc =
+      typeof description === 'string' ? description.trim() : String(description);
+    if (desc === '') {
+      res.status(400).json({
+        success: false,
+        message: 'A descrição não pode ser vazia.',
+      });
+      return;
+    }
+
+    try {
+      await this.createRestaurantRatingService.execute({
+        restaurantId: Number(restaurantId),
+        userId: Number(userId),
+        rating: numericRating,
+        description: desc,
+      });
+      res.status(201).send();
+    } catch (err) {
+      if (err instanceof NotFoundException) {
+        res.status(404).json({
+          success: false,
+          message: 'Restaurante não encontrado',
+        });
+        return;
+      }
+      throw err;
+    }
   }
 
   @Put(':id')

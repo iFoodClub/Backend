@@ -37,6 +37,6 @@ import { AuthService } from 'src/application/use-cases/login.use-cases';
     EmployeeRepository,
     JwtStrategy,
   ],
-  exports: [AuthService, JwtStrategy, PassportModule],
+  exports: [AuthService, JwtStrategy, PassportModule, JwtModule],
 })
 export class AuthModule {}

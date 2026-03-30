@@ -3,7 +3,7 @@
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
   async up(queryInterface, Sequelize) {
-    return queryInterface.bulkInsert('dish_rating', [
+    await queryInterface.bulkInsert('dish_rating', [
       {
         id: 1,
         dishId: 1,
@@ -59,8 +59,16 @@ module.exports = {
         userId: 11,
         rating: 4,
         description: 'Pizza autêntica',
-      }
+      },
     ]);
+
+    await queryInterface.sequelize.query(
+      `SELECT setval(
+        pg_get_serial_sequence('dish_rating', 'id'),
+        (SELECT COALESCE(MAX(id), 1) FROM dish_rating),
+        true
+      );`,
+    );
   },
 
   async down(queryInterface, Sequelize) {
