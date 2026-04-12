@@ -27,9 +27,11 @@ import { employeeProvider } from 'src/infrastructure/providers/employee.provider
 import { CompanyRepository } from 'src/infrastructure/database/repositories/company.repository';
 import { EmployeeRepository } from 'src/infrastructure/database/repositories/employee.repository';
 import { DishRepository } from 'src/infrastructure/database/repositories/dish.repository';
+import { AuthModule } from './auth.module';
+import { UploadOwnershipGuard } from 'src/infrastructure/guards/upload-ownership.guard';
 
 @Module({
-  imports: [DatabaseModule],
+  imports: [DatabaseModule, AuthModule],
   controllers: [RestaurantController],
   providers: [
     ...restaurantProvider,
@@ -45,10 +47,11 @@ import { DishRepository } from 'src/infrastructure/database/repositories/dish.re
     CompanyRepository,
     EmployeeRepository,
     DishRepository,
+    UploadOwnershipGuard,
     ListRestaurantService,
-    GetRestaurantByIdService, 
-    CreateRestaurantService, 
-    UpdateRestaurantService, 
+    GetRestaurantByIdService,
+    CreateRestaurantService,
+    UpdateRestaurantService,
     DeleteRestaurantService,
     ListDishesByRestaurantService,
     ListOrdersByRestaurantUseCase,
@@ -56,15 +59,15 @@ import { DishRepository } from 'src/infrastructure/database/repositories/dish.re
     CreateIndividualOrderUseCase,
     UpdateIndividualOrderStatusUseCase,
     UpdateCompanyOrderStatusUseCase,
-    GetOrderProgressUseCase
+    GetOrderProgressUseCase,
   ],
   exports: [
     RestaurantRepository,
     RestaurantRatingRepository,
     ListRestaurantService,
-    GetRestaurantByIdService, 
-    CreateRestaurantService, 
-    UpdateRestaurantService, 
+    GetRestaurantByIdService,
+    CreateRestaurantService,
+    UpdateRestaurantService,
     DeleteRestaurantService,
     ListDishesByRestaurantService,
     ListOrdersByRestaurantUseCase,
@@ -72,7 +75,7 @@ import { DishRepository } from 'src/infrastructure/database/repositories/dish.re
     CreateIndividualOrderUseCase,
     UpdateIndividualOrderStatusUseCase,
     UpdateCompanyOrderStatusUseCase,
-    GetOrderProgressUseCase
-  ]
+    GetOrderProgressUseCase,
+  ],
 })
 export class RestaurantModule {}

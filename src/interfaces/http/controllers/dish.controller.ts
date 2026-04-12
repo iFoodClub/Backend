@@ -1,4 +1,15 @@
-import { Body, Controller, Delete, Get, HttpCode, Param, Post, Put, Res } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  HttpCode,
+  Param,
+  Post,
+  Put,
+  Res,
+  UseGuards,
+} from '@nestjs/common';
 
 import { GetDishByIdService } from '../../../application/use-cases/get-dish-byid.use-cases';
 import { DishInterface } from 'src/domain/models/dish.model';
@@ -6,7 +17,6 @@ import { CreateDishService } from '../../../application/use-cases/create-dish.us
 import { UpdateDishService } from '../../../application/use-cases/update-dish.use-cases';
 import { DeleteDishService } from '../../../application/use-cases/delete-dish.use-cases';
 import { Response } from 'express';
-import { DishEntityInterface } from 'src/domain/repositories/dish.repository.interface';
 import { ListDishesService } from '../../../application/use-cases/list-dishes.use-cases';
 import { ApiBody, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { ListDishDtoResponse } from 'src/interfaces/http/dtos/response/listDish.dto';
@@ -19,6 +29,10 @@ import { AverageRatingDishInterface } from '../../../domain/models/average-ratin
 import { ListDishRatingDtoResponse } from 'src/interfaces/http/dtos/response/listDishRating.dto';
 import { DishEmployeeEntityInterface } from 'src/domain/repositories/dish-employee.respository.interface';
 import { ListDishAverageRatingDtoResponse } from 'src/interfaces/http/dtos/response/listDishAverageRating.dto';
+import { JwtAuthGuard } from 'src/infrastructure/guards/jwt-auth.guard';
+import { UploadAuthorizationGuard } from 'src/infrastructure/guards/upload-authorization.guard';
+import { UploadOwnershipGuard } from 'src/infrastructure/guards/upload-ownership.guard';
+import { ApiBearerAuth } from '@nestjs/swagger';
 
 @ApiTags('Dish API')
 @Controller('Dish')
@@ -30,7 +44,7 @@ export class DishController {
     private updateDishService: UpdateDishService,
     private deleteDishService: DeleteDishService,
     private listDishesByRestaurantService: ListDishesByRestaurantService,
-    private averageRatingByRestaurantService: AverageRatingByRestaurantService
+    private averageRatingByRestaurantService: AverageRatingByRestaurantService,
   ) {}
 
   @Get()
@@ -65,7 +79,10 @@ export class DishController {
     description: 'Prato não encontrado',
     type: Http404,
   })
-  async getById(@Param('id') id: string, @Res() res: Response): Promise<DishInterface> {
+  async getById(
+    @Param('id') id: string,
+    @Res() res: Response,
+  ): Promise<DishInterface> {
     const dish = await this.getDishByIdService.execute(Number(id));
     if (!dish) {
       res.status(404).json({
@@ -93,20 +110,35 @@ export class DishController {
     description: 'Erro ao criar prato',
     type: Http400,
   })
-  create(
-    @Body() dish: DishInterface, @Res() res: Response) {
+  async create(@Body() dish: DishInterface, @Res() res: Response) {
     const { restaurantId, name, description, price, image } = dish;
-    if(!(restaurantId && name && description && price && image)){
+    if (!(restaurantId && name && description && price && image)) {
       res.status(400).json({
-        sucess: false,
-        message: 'Todos os campos são obrigatórios'
+        success: false,
+        message: 'Todos os campos são obrigatórios',
       });
       return;
     }
-    this.createDishService.execute(dish);
-    res.send();
+
+    try {
+      const createdDish = await this.createDishService.execute(dish);
+      res.status(201).json({
+        success: true,
+        message: 'Prato criado com sucesso',
+        data: createdDish,
+      });
+    } catch (error) {
+      console.error('Erro ao criar prato:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Erro interno do servidor ao criar prato',
+        error: error instanceof Error ? error.message : 'Erro desconhecido',
+      });
+    }
   }
 
+  @UseGuards(JwtAuthGuard, UploadAuthorizationGuard, UploadOwnershipGuard)
+  @ApiBearerAuth('JWT-auth')
   @Put(':id')
   @ApiParam({
     name: 'id',
@@ -131,10 +163,22 @@ export class DishController {
     description: 'Erro ao atualizar prato',
     type: Http400,
   })
-  async update(@Param('id') id: string, @Body() dishData: DishInterface, @Res() res: Response): Promise<DishInterface> {
-    const expectedFields = ['restaurantId', 'name', 'description', 'price', 'image'];
+  async update(
+    @Param('id') id: string,
+    @Body() dishData: DishInterface,
+    @Res() res: Response,
+  ): Promise<DishInterface> {
+    const expectedFields = [
+      'restaurantId',
+      'name',
+      'description',
+      'price',
+      'image',
+    ];
     const receivedFields = Object.keys(dishData);
-    const invalidFields = receivedFields.filter(field => !expectedFields.includes(field));
+    const invalidFields = receivedFields.filter(
+      (field) => !expectedFields.includes(field),
+    );
     const dish = await this.updateDishService.execute(Number(id), dishData);
 
     if (invalidFields.length > 0) {
@@ -154,6 +198,8 @@ export class DishController {
     res.status(200).json(dish);
   }
 
+  @UseGuards(JwtAuthGuard, UploadAuthorizationGuard, UploadOwnershipGuard)
+  @ApiBearerAuth('JWT-auth')
   @Delete(':id')
   @ApiParam({
     name: 'id',
@@ -169,15 +215,15 @@ export class DishController {
     type: Http404,
   })
   async delete(@Param('id') id: string, @Res() res: Response): Promise<void> {
-  const dish = await this.getDishByIdService.execute(Number(id));
-  if (!dish) {
+    const dish = await this.getDishByIdService.execute(Number(id));
+    if (!dish) {
       res.status(404).json({
         success: false,
         message: 'Prato não encontrado',
       });
       return;
     }
-    this.deleteDishService.execute(Number(id));
+    await this.deleteDishService.execute(Number(id));
     res.status(200).json({
       success: true,
       message: 'Prato deletado com sucesso',
@@ -195,8 +241,13 @@ export class DishController {
     isArray: true,
     type: ListDishRatingDtoResponse,
   })
-  async listByRestaurant(@Param('restaurantId') restaurantId: string, @Res() res: Response): Promise<void> {
-    const dishes = await this.listDishesByRestaurantService.execute(Number(restaurantId));
+  async listByRestaurant(
+    @Param('restaurantId') restaurantId: string,
+    @Res() res: Response,
+  ): Promise<void> {
+    const dishes = await this.listDishesByRestaurantService.execute(
+      Number(restaurantId),
+    );
     res.status(200).json(dishes);
   }
 
@@ -211,8 +262,12 @@ export class DishController {
     isArray: true,
     type: ListDishAverageRatingDtoResponse,
   })
-  async averageRatingByRestaurant(@Param('restaurantId') restaurantId: string, @Res() res: Response): Promise<void> {
-    const dishes: AverageRatingDishInterface[] = await this.averageRatingByRestaurantService.execute(Number(restaurantId));
+  async averageRatingByRestaurant(
+    @Param('restaurantId') restaurantId: string,
+    @Res() res: Response,
+  ): Promise<void> {
+    const dishes: AverageRatingDishInterface[] =
+      await this.averageRatingByRestaurantService.execute(Number(restaurantId));
     res.status(200).json(dishes);
   }
 }

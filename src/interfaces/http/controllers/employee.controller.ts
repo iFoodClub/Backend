@@ -1,28 +1,53 @@
-import { Body, Controller, Delete, Get, HttpCode, Param, Post, Put, Res } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  HttpCode,
+  Param,
+  Post,
+  Put,
+  Res,
+  UseGuards,
+  UsePipes,
+} from '@nestjs/common';
 
 import { GetEmployeeByIdService } from '../../../application/use-cases/get-employee-byid.use-cases';
-import { EmployeeInterface } from 'src/domain/models/employee.model';
+import { EmployeeInterface, IEmployeePopulate } from 'src/domain/models/employee.model';
 import { CreateEmployeeService } from '../../../application/use-cases/create-employee.use-cases';
 import { UpdateEmployeeService } from '../../../application/use-cases/update-employee.use-cases';
 import { DeleteEmployeeService } from '../../../application/use-cases/delete-employee.use-cases';
 import { Response } from 'express';
 import { EmployeeEntityInterface } from 'src/domain/repositories/employee.repository.interface';
 import { ListEmployeesService } from '../../../application/use-cases/list-employees.use-cases';
-import { ApiBody, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger';
+import {
+  ApiBody,
+  ApiParam,
+  ApiResponse,
+  ApiTags,
+  ApiBearerAuth,
+} from '@nestjs/swagger';
 import { ListEmployeeDtoResponse } from 'src/interfaces/http/dtos/response/listEmployee.dto';
 import { CreateEmployeeDto } from 'src/interfaces/http/dtos/request/createEmployee.dto';
 import { Http400 } from 'src/interfaces/http/dtos/response/http400';
 import { Http404 } from 'src/interfaces/http/dtos/response/http404';
+import { SqlInjectionGuard } from '../../../infrastructure/security/sql-injection.guard';
+import { InputValidationPipe } from '../../../infrastructure/security/input-validation.pipe';
+import { JwtAuthGuard } from 'src/infrastructure/guards/jwt-auth.guard';
+import { UploadAuthorizationGuard } from 'src/infrastructure/guards/upload-authorization.guard';
+import { UploadOwnershipGuard } from 'src/infrastructure/guards/upload-ownership.guard';
 
 @ApiTags('Employee API')
 @Controller('employee')
+@UseGuards(SqlInjectionGuard)
+@UsePipes(InputValidationPipe)
 export class EmployeeController {
   constructor(
     private readonly listEmployeesService: ListEmployeesService,
     private readonly getEmployeeByIdService: GetEmployeeByIdService,
     private readonly createEmployeeService: CreateEmployeeService,
     private readonly updateEmployeeService: UpdateEmployeeService,
-    private readonly deleteEmployeeService: DeleteEmployeeService
+    private readonly deleteEmployeeService: DeleteEmployeeService,
   ) {}
 
   @Get()
@@ -36,7 +61,7 @@ export class EmployeeController {
     status: 500,
     description: 'Erro interno do servidor',
   })
-  async list(): Promise<EmployeeEntityInterface[]> {
+  async list(): Promise<IEmployeePopulate[]> {
     const employeeList = await this.listEmployeesService.execute();
 
     return employeeList;
@@ -56,7 +81,10 @@ export class EmployeeController {
     status: 404,
     description: 'Funcionário não encontrado',
   })
-  async getById(@Param('id') id: string, @Res() res: Response): Promise<EmployeeEntityInterface> {
+  async getById(
+    @Param('id') id: string,
+    @Res() res: Response,
+  ): Promise<IEmployeePopulate> {
     const employee = await this.getEmployeeByIdService.execute(Number(id));
     if (!employee) {
       res.status(404).json({
@@ -84,15 +112,24 @@ export class EmployeeController {
     description: 'Erro ao criar funcionário',
     type: Http400,
   })
-  async create(
-    @Body() employee: EmployeeInterface, @Res() res: Response) {
-      const expectedFields = ['userId', 'companyId', 'name', 'cpf', 'birthDate', 'vacation', 'profileImage'];
-      const receivedFields = Object.keys(employee);
-      const invalidFields = receivedFields.filter(field => !expectedFields.includes(field));
-      if(invalidFields.length > 0) {
+  async create(@Body() employee: EmployeeInterface, @Res() res: Response) {
+    const expectedFields = [
+      'userId',
+      'companyId',
+      'name',
+      'cpf',
+      'birthDate',
+      'vacation',
+      'profileImage',
+    ];
+    const receivedFields = Object.keys(employee);
+    const invalidFields = receivedFields.filter(
+      (field) => !expectedFields.includes(field),
+    );
+    if (invalidFields.length > 0) {
       res.status(400).json({
         sucess: false,
-        message: `Os seguintes campos são inválidos: ${invalidFields.join(', ')}`
+        message: `Os seguintes campos são inválidos: ${invalidFields.join(', ')}`,
       });
       return;
     }
@@ -100,6 +137,8 @@ export class EmployeeController {
     res.send();
   }
 
+  @UseGuards(JwtAuthGuard, UploadAuthorizationGuard, UploadOwnershipGuard)
+  @ApiBearerAuth('JWT-auth')
   @Put(':id')
   @ApiParam({
     name: 'id',
@@ -123,11 +162,28 @@ export class EmployeeController {
     description: 'Funcionário não encontrado',
     type: Http404,
   })
-  async update(@Param('id') id: string, @Body() employeeData: EmployeeInterface, @Res() res:Response): Promise<EmployeeInterface> {
-    const expectedFields = ['userId', 'companyId', 'name', 'cpf', 'birthDate', 'vacation', 'profileImage'];
+  async update(
+    @Param('id') id: string,
+    @Body() employeeData: EmployeeInterface,
+    @Res() res: Response,
+  ): Promise<EmployeeInterface> {
+    const expectedFields = [
+      'userId',
+      'companyId',
+      'name',
+      'cpf',
+      'birthDate',
+      'vacation',
+      'profileImage',
+    ];
     const receivedFields = Object.keys(employeeData);
-    const invalidFields = receivedFields.filter(field => !expectedFields.includes(field));
-    const user = await this.updateEmployeeService.execute(Number(id), employeeData);
+    const invalidFields = receivedFields.filter(
+      (field) => !expectedFields.includes(field),
+    );
+    const user = await this.updateEmployeeService.execute(
+      Number(id),
+      employeeData,
+    );
     if (!user) {
       res.status(404).json({
         success: false,
@@ -146,6 +202,8 @@ export class EmployeeController {
   }
 
   @Delete(':id')
+  @UseGuards(JwtAuthGuard, UploadAuthorizationGuard, UploadOwnershipGuard)
+  @ApiBearerAuth('JWT-auth')
   @ApiParam({
     name: 'id',
     description: 'ID do funcionário',
@@ -153,6 +211,10 @@ export class EmployeeController {
   @ApiResponse({
     status: 200,
     description: 'Funcionário deletado com sucesso',
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Não autorizado',
   })
   @ApiResponse({
     status: 404,
@@ -169,7 +231,7 @@ export class EmployeeController {
       return;
     }
 
-    this.deleteEmployeeService.execute(Number(id));
+    await this.deleteEmployeeService.execute(Number(id));
     res.status(200).json({
       success: true,
       message: 'Funcionário deletado com sucesso',

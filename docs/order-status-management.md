@@ -39,7 +39,6 @@ Atualiza o status de um pedido individual específico. Se o status for alterado 
 **Body:**
 ```json
 {
-  "id": 1,
   "status": "completed"
 }
 ```
@@ -66,7 +65,6 @@ Atualiza o status de um pedido da empresa.
 **Body:**
 ```json
 {
-  "id": 1,
   "status": "delivered"
 }
 ```
@@ -117,7 +115,7 @@ Retorna informações detalhadas sobre o progresso de um pedido da empresa, incl
 ```bash
 curl -X PUT http://localhost:3000/Restaurant/1/orders/5/individual-orders/10/status \
   -H "Content-Type: application/json" \
-  -d '{"id": 10, "status": "completed"}'
+  -d '{"status": "completed"}'
 ```
 
 ### Cenário 2: Consultando progresso
@@ -129,7 +127,7 @@ curl -X GET http://localhost:3000/Restaurant/1/orders/5/progress
 ```bash
 curl -X PUT http://localhost:3000/Restaurant/1/orders/5/status \
   -H "Content-Type: application/json" \
-  -d '{"id": 5, "status": "delivered"}'
+  -d '{"status": "delivered"}'
 ```
 
 ## Tratamento de Erros

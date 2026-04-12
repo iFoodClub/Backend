@@ -1,34 +1,69 @@
-import { Body, Controller, Delete, Get, HttpCode, Param, Post, Put, Res, NotFoundException } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  HttpCode,
+  Param,
+  Post,
+  Put,
+  Res,
+  NotFoundException,
+  UseGuards,
+  UsePipes,
+} from '@nestjs/common';
 
-import { GetRestaurantByIdService } from '../../../application/use-cases/get-restaurant-byid.use-cases'
+import { GetRestaurantByIdService } from '../../../application/use-cases/get-restaurant-byid.use-cases';
 import { CreateRestaurantService } from '../../../application/use-cases/create-restaurant.use-cases';
 import { UpdateRestaurantService } from '../../../application/use-cases/update-restaurant.use-cases';
 import { DeleteRestaurantService } from '../../../application/use-cases/delete-restaurant.use-cases';
 import { Response } from 'express';
 import { RestaurantInterface } from 'src/domain/models/restaurant.model';
-import { ApiBody, ApiExtraModels, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger';
+import {
+  ApiBody,
+  ApiExtraModels,
+  ApiParam,
+  ApiResponse,
+  ApiTags,
+  ApiBearerAuth,
+} from '@nestjs/swagger';
 import { ListRestaurantDtoResponse } from 'src/interfaces/http/dtos/response/listRestaurant.dto';
 import { Http404 } from 'src/interfaces/http/dtos/response/http404';
 import { CreateRestaurantDto } from 'src/interfaces/http/dtos/request/createRestaurant.dto';
 import { Http400 } from 'src/interfaces/http/dtos/response/http400';
 import { ListRestaurantService } from '../../../application/use-cases/list-restaurant.use-cases';
-import { RestaurantDetailDtoResponse, RestaurantDetailDishDto, RestaurantDetailRatingDto } from 'src/interfaces/http/dtos/response/restaurant-detail.dto';
+import {
+  RestaurantDetailDtoResponse,
+  RestaurantDetailDishDto,
+  RestaurantDetailRatingDto,
+} from 'src/interfaces/http/dtos/response/restaurant-detail.dto';
 import { ListOrdersByRestaurantUseCase } from 'src/application/use-cases/list-orders-by-restaurant.use-case';
 import { ICompanyOrder } from 'src/domain/models/company-order.model';
 import { SendOrdersUseCase } from 'src/application/use-cases/send-orders.use-case';
-import { SendOrdersDto } from 'src/interfaces/http/dtos/request/send-orders.dto';
 import { CreateIndividualOrderUseCase } from 'src/application/use-cases/create-indivisual-order.use-case';
-import { CreateCompanyOrderDto, CreateIndividualOrderDto } from 'src/interfaces/http/dtos/request/create-company-order.dto';
+import { CreateIndividualOrderDto } from 'src/interfaces/http/dtos/request/create-company-order.dto';
 import { UpdateIndividualOrderStatusUseCase } from 'src/application/use-cases/update-individual-order-status.use-case';
 import { UpdateCompanyOrderStatusUseCase } from 'src/application/use-cases/update-company-order-status.use-case';
 import { GetOrderProgressUseCase } from 'src/application/use-cases/get-order-progress.use-case';
 import { UpdateIndividualOrderStatusDto } from 'src/interfaces/http/dtos/request/update-individual-order-status.dto';
 import { UpdateCompanyOrderStatusDto } from 'src/interfaces/http/dtos/request/update-company-order-status.dto';
 import { OrderProgressDto } from 'src/interfaces/http/dtos/response/order-progress.dto';
+import { SqlInjectionGuard } from '../../../infrastructure/security/sql-injection.guard';
+import { InputValidationPipe } from '../../../infrastructure/security/input-validation.pipe';
+import { JwtAuthGuard } from 'src/infrastructure/guards/jwt-auth.guard';
+import { UploadAuthorizationGuard } from 'src/infrastructure/guards/upload-authorization.guard';
+import { UploadOwnershipGuard } from 'src/infrastructure/guards/upload-ownership.guard';
 
 @ApiTags('Restaurant API')
-@ApiExtraModels(RestaurantDetailDtoResponse, RestaurantDetailDishDto, RestaurantDetailRatingDto, OrderProgressDto)
+@ApiExtraModels(
+  RestaurantDetailDtoResponse,
+  RestaurantDetailDishDto,
+  RestaurantDetailRatingDto,
+  OrderProgressDto,
+)
 @Controller('Restaurant')
+@UseGuards(SqlInjectionGuard)
+@UsePipes(InputValidationPipe)
 export class RestaurantController {
   constructor(
     private listRestaurantService: ListRestaurantService,
@@ -75,7 +110,10 @@ export class RestaurantController {
     description: 'Restaurante não encontrado',
     type: Http404,
   })
-  async getById(@Param('id') id: string, @Res() res: Response): Promise<RestaurantInterface> {
+  async getById(
+    @Param('id') id: string,
+    @Res() res: Response,
+  ): Promise<RestaurantInterface> {
     const product = await this.getRestaurantByIdService.execute(Number(id));
     if (!product) {
       res.status(404).json({
@@ -103,20 +141,21 @@ export class RestaurantController {
     description: 'Erro ao criar restaurante',
     type: Http400,
   })
-  create(
-    @Body() restaurant: RestaurantInterface, @Res() res: Response) {
-    const { userId, name, cnpj, cep, number} = restaurant;
-    if(!(userId && name && cnpj && cep && number)) {
+  async create(@Body() restaurant: RestaurantInterface, @Res() res: Response) {
+    const { userId, name, cnpj, cep, number } = restaurant;
+    if (!(userId && name && cnpj && cep && number)) {
       res.status(400).json({
         sucess: false,
-        message: 'Todos os campos são obrigatórios'
+        message: 'Todos os campos são obrigatórios',
       });
       return;
     }
-    this.createRestaurantService.execute(restaurant);
+    await this.createRestaurantService.execute(restaurant);
     res.send();
   }
 
+  @UseGuards(JwtAuthGuard, UploadAuthorizationGuard, UploadOwnershipGuard)
+  @ApiBearerAuth('JWT-auth')
   @Put(':id')
   @ApiParam({
     name: 'id',
@@ -140,11 +179,27 @@ export class RestaurantController {
     description: 'Erro ao atualizar restaurante',
     type: Http400,
   })
-  async update(@Param('id') id: string, @Body() restaurantData: RestaurantInterface,@Res() res: Response): Promise<RestaurantInterface> {
-    const expectedFields = ['userId', 'name', 'cnpj', 'cep', 'number', 'profileImage'];
+  async update(
+    @Param('id') id: string,
+    @Body() restaurantData: RestaurantInterface,
+    @Res() res: Response,
+  ): Promise<RestaurantInterface> {
+    const expectedFields = [
+      'userId',
+      'name',
+      'cnpj',
+      'cep',
+      'number',
+      'profileImage',
+    ];
     const receivedFields = Object.keys(restaurantData);
-    const invalidFields = receivedFields.filter(field => !expectedFields.includes(field));
-    const restaurant = await this.updateRestaurantService.execute(Number(id), restaurantData);
+    const invalidFields = receivedFields.filter(
+      (field) => !expectedFields.includes(field),
+    );
+    const restaurant = await this.updateRestaurantService.execute(
+      Number(id),
+      restaurantData,
+    );
     if (!restaurant) {
       res.status(404).json({
         success: false,
@@ -162,7 +217,31 @@ export class RestaurantController {
     res.status(200).json(restaurant);
   }
 
+  @UseGuards(
+    JwtAuthGuard,
+    UploadAuthorizationGuard,
+    UploadOwnershipGuard,
+    SqlInjectionGuard,
+  )
   @Delete(':id')
+  @ApiBearerAuth('JWT-auth')
+  @ApiParam({
+    name: 'id',
+    description: 'ID do restaurante',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Restaurante deletado com sucesso',
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Não autorizado',
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Restaurante não encontrado',
+    type: Http404,
+  })
   async delete(@Param('id') id: string, @Res() res: Response): Promise<void> {
     const restaurant = await this.getRestaurantByIdService.execute(Number(id));
     if (!restaurant) {
@@ -172,12 +251,11 @@ export class RestaurantController {
       });
       return;
     }
+    this.deleteRestaurantService.execute(Number(id));
     res.status(200).json({
       success: true,
       message: 'Restaurante deletado com sucesso',
     });
-    
-    this.deleteRestaurantService.execute(Number(id));
   }
 
   @Get(':id/orders')
@@ -278,12 +356,14 @@ export class RestaurantController {
       if (Number(restaurantId) !== createOrderDto.restaurantId) {
         res.status(400).json({
           success: false,
-          message: 'ID do restaurante na URL não corresponde ao ID no corpo da requisição',
+          message:
+            'ID do restaurante na URL não corresponde ao ID no corpo da requisição',
         });
         return;
       }
 
-      const result = await this.createCompanyOrderUseCase.execute(createOrderDto);
+      const result =
+        await this.createCompanyOrderUseCase.execute(createOrderDto);
       res.status(201).json({
         success: true,
         message: result.message,
@@ -304,7 +384,9 @@ export class RestaurantController {
     }
   }
 
-  @Put(':restaurantId/orders/:orderId/individual-orders/:individualOrderId/status')
+  @Put(
+    ':restaurantId/orders/:orderId/individual-orders/:individualOrderId/status',
+  )
   @HttpCode(200)
   @ApiParam({
     name: 'restaurantId',
@@ -344,18 +426,9 @@ export class RestaurantController {
     @Res() res: Response,
   ): Promise<void> {
     try {
-      // Validar se o ID do pedido individual na URL corresponde ao do DTO
-      if (Number(individualOrderId) !== updateDto.id) {
-        res.status(400).json({
-          success: false,
-          message: 'ID do pedido individual na URL não corresponde ao ID no corpo da requisição',
-        });
-        return;
-      }
-
       const result = await this.updateIndividualOrderStatusUseCase.execute(
         Number(individualOrderId),
-        updateDto.status
+        updateDto.status,
       );
 
       res.status(200).json({
@@ -413,18 +486,9 @@ export class RestaurantController {
     @Res() res: Response,
   ): Promise<void> {
     try {
-      // Validar se o ID do pedido da empresa na URL corresponde ao do DTO
-      if (Number(orderId) !== updateDto.id) {
-        res.status(400).json({
-          success: false,
-          message: 'ID do pedido da empresa na URL não corresponde ao ID no corpo da requisição',
-        });
-        return;
-      }
-
       const result = await this.updateCompanyOrderStatusUseCase.execute(
         Number(orderId),
-        updateDto.status
+        updateDto.status,
       );
 
       res.status(200).json({
@@ -467,7 +531,9 @@ export class RestaurantController {
     @Res() res: Response,
   ): Promise<void> {
     try {
-      const progress = await this.getOrderProgressUseCase.execute(Number(orderId));
+      const progress = await this.getOrderProgressUseCase.execute(
+        Number(orderId),
+      );
 
       res.status(200).json({
         success: true,

@@ -1,3 +1,6 @@
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
+/* eslint-disable @typescript-eslint/no-unsafe-argument */
+/* eslint-disable @typescript-eslint/no-unsafe-member-access */
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { Inject } from '@nestjs/common';
 import { EmployeeWeeklyOrderResponse } from 'src/interfaces/http/dtos/response/employeeWeeklyOrder.dto';
@@ -6,6 +9,7 @@ import { EmployeeRepository } from 'src/infrastructure/database/repositories/emp
 import { OrderItemRepository } from 'src/infrastructure/database/repositories/order-item.repository';
 import { EmployeeWeeklyOrdersEntityInterface } from 'src/domain/repositories/employee-weekly-orders.repository.interface';
 import { DishRepository } from 'src/infrastructure/database/repositories/dish.repository';
+import { DayOfWeek } from 'src/domain/repositories/employee-weekly-orders.repository.interface';
 
 @Injectable()
 export class GetWeeklyOrdersByEmployeeService {
@@ -26,39 +30,81 @@ export class GetWeeklyOrdersByEmployeeService {
       throw new NotFoundException('Funcionário não encontrado');
     }
 
-    const employeeWeeklyOrders = await this.employeeWeeklyOrdersRepository.findByEmployeeId(employeeId);
-    const result: EmployeeWeeklyOrdersEntityInterface[] = [];
+    const employeeWeeklyOrders =
+      await this.employeeWeeklyOrdersRepository.findByEmployeeId(employeeId);
+
+    // Criar um mapa dos pedidos existentes por dia da semana
+    const ordersMap = new Map<DayOfWeek, EmployeeWeeklyOrdersEntityInterface>();
+
     for (const employeeWeeklyOrder of employeeWeeklyOrders) {
-      const orderItems = await this.orderItemRepository.findByPk(employeeWeeklyOrder.orderItemId);
-      employeeWeeklyOrder.order = orderItems;
-      if (orderItems.dishId) {
-        const dish = await this.dishRepository.getById(orderItems.dishId);
-        employeeWeeklyOrder.dish = dish;
+      let orderItems = null;
+      let dish = null;
+
+      if (employeeWeeklyOrder.orderItemId) {
+        orderItems = await this.orderItemRepository.findByPk(
+          employeeWeeklyOrder.orderItemId,
+        );
+        if (orderItems?.dishId) {
+          dish = await this.dishRepository.getById(orderItems.dishId);
+        }
       }
-      result.push({
+
+      ordersMap.set(employeeWeeklyOrder.dayOfWeek, {
         id: employeeWeeklyOrder.id,
         employeeId: employeeWeeklyOrder.employeeId,
         dayOfWeek: employeeWeeklyOrder.dayOfWeek,
         orderItemId: employeeWeeklyOrder.orderItemId,
         order: orderItems,
-        dish: employeeWeeklyOrder.dish,
+        dish: dish,
+        createdAt: undefined,
+        updatedAt: undefined,
       });
     }
 
-     return result.map(order => ({
-      id: order.id,
-      employeeId: order.employeeId,
-      dayOfWeek: order.dayOfWeek,
-      orderItemId: order.orderItemId,
-      order: order.order,
-      dish: {
-        id: order.dish.id,
-        restaurantId: order.dish.restaurantId,
-        name: order.dish.name,
-        description: order.dish.description,
-        price: order.dish.price,
-        image: order.dish.image,
-      },
-     }));
+    // Definir todos os dias da semana na ordem correta
+    const allDaysOfWeek: DayOfWeek[] = [
+      'Monday',
+      'Tuesday',
+      'Wednesday',
+      'Thursday',
+      'Friday',
+      'Saturday',
+      'Sunday',
+    ];
+
+    // Retornar todos os dias da semana, preenchendo com dados do pedido se existir
+    return allDaysOfWeek.map((dayOfWeek) => {
+      const order = ordersMap.get(dayOfWeek);
+
+      if (order) {
+        return {
+          id: order.id,
+          employeeId: order.employeeId,
+          dayOfWeek: order.dayOfWeek,
+          orderItemId: order.orderItemId,
+          order: order.order || [],
+          dish: order.dish
+            ? {
+                id: order.dish.id,
+                restaurantId: order.dish.restaurantId,
+                name: order.dish.name,
+                description: order.dish.description,
+                price: order.dish.price,
+                image: order.dish.image,
+              }
+            : null,
+        };
+      } else {
+        // Retornar dia sem pedido
+        return {
+          id: null,
+          employeeId: employeeId,
+          dayOfWeek: dayOfWeek,
+          orderItemId: null,
+          order: [],
+          dish: null,
+        };
+      }
+    });
   }
-} 
+}

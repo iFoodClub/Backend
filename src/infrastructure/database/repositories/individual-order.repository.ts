@@ -1,6 +1,9 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { IndividualOrderEntity } from '../entities/individual-order.entity';
 import { IndividualOrderEntityInterface, IndividualOrderStatus } from '../../../domain/repositories/individual-order.repository.interface';
+import { EmployeeEntity } from '../entities/employee.entity';
+import { DishEntity } from '../entities/dish.entity';
+import { UserEntity } from '../entities/user.entity';
 
 @Injectable()
 export class IndividualOrderRepository {
@@ -28,6 +31,28 @@ export class IndividualOrderRepository {
 
   async listByCompanyOrderIdNull(companyId: number): Promise<IndividualOrderEntityInterface[]> {
     return await this.individualOrderEntity.findAll({ where: { companyOrderId: null, companyId } });
+  }
+
+  async listByCompanyOrderIdNullWithIncludes(companyId: number): Promise<IndividualOrderEntity[]> {
+    return await this.individualOrderEntity.findAll({
+      where: { companyOrderId: null, companyId },
+      include: [
+        {
+          model: EmployeeEntity,
+          as: 'employee',
+          include: [
+            {
+              model: UserEntity,
+              as: 'user',
+            },
+          ],
+        },
+        {
+          model: DishEntity,
+          as: 'dish',
+        },
+      ],
+    });
   }
 
   async listByEmployee(employeeId: number): Promise<IndividualOrderEntityInterface[]> {

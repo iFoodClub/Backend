@@ -1,4 +1,4 @@
-import { RestaurantEntity } from "../database/entities/restaurant.entity";
+import { RestaurantEntity } from '../database/entities/restaurant.entity';
 import { RestaurantRepository } from '../database/repositories/restaurant.repository';
 
 export const restaurantProvider = [

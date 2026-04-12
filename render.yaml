@@ -1,0 +1,70 @@
+# Configuração do Render para deploy automático
+# Documentação: https://render.com/docs/yaml-spec
+# Nota: O banco de dados 'foodclub-db' foi criado manualmente no Dashboard
+
+services:
+  # Backend API
+  - type: web
+    name: Backend
+    env: docker
+    plan: free # Opções: free, starter, standard, pro
+    region: oregon
+    # Build direto do Dockerfile (deploy automático via Git)
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    # Para usar imagem do Docker Hub:
+    # 1. Comente dockerfilePath e dockerContext acima
+    # 2. Descomente e ajuste a linha abaixo:
+    # image: docker.io/seu-usuario-dockerhub/foodclub-backend:development
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 3000
+      - key: DB_HOST
+        fromDatabase:
+          name: foodclub-db
+          property: host
+      - key: DB_PORT
+        fromDatabase:
+          name: foodclub-db
+          property: port
+      - key: DB_USERNAME
+        fromDatabase:
+          name: foodclub-db
+          property: user
+      - key: DB_PASSWORD
+        fromDatabase:
+          name: foodclub-db
+          property: password
+      - key: DB_DATABASE
+        fromDatabase:
+          name: foodclub-db
+          property: database
+      - key: JWT_SECRET
+        generateValue: true # Gera automaticamente
+      - key: JWT_EXPIRATION
+        value: 7d
+      - key: SEED_SECRET
+        generateValue: true # Secret para endpoint de seeds
+      - key: AWS_REGION
+        value: us-east-1 # Usado para S3 e CloudWatch
+      - key: AWS_ACCESS_KEY_ID
+        sync: false # Configure no Dashboard - usado para S3 e CloudWatch
+      - key: AWS_SECRET_ACCESS_KEY
+        sync: false # Configure no Dashboard - usado para S3 e CloudWatch
+      - key: AWS_S3_BUCKET_NAME
+        sync: false # Variável opcional para S3
+      - key: CLOUDWATCH_LOG_GROUP
+        value: /aws/foodclub/backend
+      - key: CLOUDWATCH_NAMESPACE
+        value: FoodClub/Backend
+    healthCheckPath: /health-check
+    autoDeploy: true # Deploy automático ao fazer push
+    branch: development # Branch que aciona deploy automático
+    buildFilter:
+      paths:
+        - src/**
+        - package.json
+        - Dockerfile
+        - render.yaml

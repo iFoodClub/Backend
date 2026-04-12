@@ -1,6 +1,6 @@
 import { Injectable, Inject } from '@nestjs/common';
-import { EmployeeEntityInterface } from 'src/domain/repositories/employee.repository.interface';
 import { EmployeeRepository } from 'src/infrastructure/database/repositories/employee.repository';
+import { IEmployeePopulate } from 'src/domain/models/employee.model';
 
 @Injectable()
 export class ListEmployeesService {
@@ -9,7 +9,7 @@ export class ListEmployeesService {
     private readonly employeeRepository: EmployeeRepository
   ) {}
 
-  execute(): Promise<EmployeeEntityInterface[]> {
+  execute(): Promise<IEmployeePopulate[]> {
     return this.employeeRepository.list();
   }
 }

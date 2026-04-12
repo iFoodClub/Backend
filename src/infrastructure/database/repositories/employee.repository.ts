@@ -2,6 +2,8 @@ import { Inject, Injectable } from '@nestjs/common';
 import { EmployeeEntity } from '../entities/employee.entity';
 import { EmployeeEntityInterface } from '../../../domain/repositories/employee.repository.interface';
 import { UserEntity } from '../entities/user.entity';
+import { CompanyEntity } from '../entities/company.entity';
+import { IEmployeePopulate } from '../../../domain/models/employee.model';
 
 @Injectable()
 export class EmployeeRepository {
@@ -10,13 +12,37 @@ export class EmployeeRepository {
     private readonly employeeEntity: typeof EmployeeEntity,
     @Inject('USER_ENTITY')
     private readonly userEntity: typeof UserEntity,
+    @Inject('COMPANY_ENTITY')
+    private readonly companyEntity: typeof CompanyEntity,
   ) {}
 
-  async list(): Promise<EmployeeEntityInterface[]> {
-    return await this.employeeEntity.findAll({
+  async list(): Promise<IEmployeePopulate[]> {
+    const employees = await this.employeeEntity.findAll({
+      include: [
+        {
+          model: this.companyEntity,
+          as: 'company',
+          attributes: ['id', 'restaurantId'],
+        },
+      ],
     });
+
+    return employees.map((employee) => ({
+      id: employee.id,
+      userId: employee.userId,
+      company: {
+        id: employee.company?.id || employee.companyId,
+        selectedRestaurantId: employee.company?.restaurantId || null,
+      },
+      name: employee.name,
+      cpf: employee.cpf,
+      birthDate: employee.birthDate ? new Date(employee.birthDate).toISOString().split('T')[0] : '',
+      vacation: employee.vacation,
+    }));
   }
-  async create(employee: Omit<EmployeeEntityInterface, 'id'>): Promise<EmployeeEntityInterface> {
+  async create(
+    employee: Omit<EmployeeEntityInterface, 'id'>,
+  ): Promise<EmployeeEntityInterface> {
     return await this.employeeEntity.create(employee);
   }
 
@@ -28,9 +54,33 @@ export class EmployeeRepository {
     return await employee.update(employeeData);
   }
 
-  async getById(id: number): Promise<EmployeeEntityInterface | null> {
-    return await this.employeeEntity.findByPk(id, {
+  async getById(id: number): Promise<IEmployeePopulate | null> {
+    const employee = await this.employeeEntity.findByPk(id, {
+      include: [
+        {
+          model: this.companyEntity,
+          as: 'company',
+          attributes: ['id', 'restaurantId'],
+        },
+      ],
     });
+
+    if (!employee) {
+      return null;
+    }
+
+    return {
+      id: employee.id,
+      userId: employee.userId,
+      company: {
+        id: employee.company?.id || employee.companyId,
+        selectedRestaurantId: employee.company?.restaurantId || null,
+      },
+      name: employee.name,
+      cpf: employee.cpf,
+      birthDate: employee.birthDate ? new Date(employee.birthDate).toISOString().split('T')[0] : '',
+      vacation: employee.vacation,
+    };
   }
   async getByUserId(userId: number): Promise<EmployeeEntityInterface | null> {
     return await this.employeeEntity.findOne({ where: { userId } });
@@ -47,13 +97,21 @@ export class EmployeeRepository {
         {
           model: this.userEntity,
           as: 'user',
-          attributes: ['profileImage'],
+          attributes: ['profileImage', 'email'],
         },
       ],
-      attributes: ['id', 'userId', 'companyId', 'name', 'cpf', 'birthDate', 'vacation'],
+      attributes: [
+        'id',
+        'userId',
+        'companyId',
+        'name',
+        'cpf',
+        'birthDate',
+        'vacation',
+      ],
     });
 
-    return employees.map(employee => ({
+    return employees.map((employee) => ({
       id: employee.id,
       userId: employee.userId,
       companyId: employee.companyId,
@@ -62,6 +120,7 @@ export class EmployeeRepository {
       birthDate: employee.birthDate,
       vacation: employee.vacation,
       profileImage: employee.user?.profileImage || null,
+      email: employee.user?.email || '',
     }));
   }
 

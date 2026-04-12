@@ -49,4 +49,10 @@ export class ListEmployeeWithProfileImageDto {
     required: false,
   })
   profileImage?: string;
+
+  @ApiProperty({
+    description: 'Email do funcionário',
+    example: 'joao.silva@email.com',
+  })
+  email: string;
 } 

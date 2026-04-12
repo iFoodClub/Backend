@@ -27,9 +27,13 @@ import { dishProvider } from 'src/infrastructure/providers/dish.provider';
 import { DishRepository } from 'src/infrastructure/database/repositories/dish.repository';
 import { companyOrderProvider } from 'src/infrastructure/providers/company-order.provider';
 import { CompanyOrderRepository } from 'src/infrastructure/database/repositories/company-order.repository';
+import { AuthModule } from './auth.module';
+import { UploadOwnershipGuard } from 'src/infrastructure/guards/upload-ownership.guard';
+import { RestaurantRepository } from 'src/infrastructure/database/repositories/restaurant.repository';
+import { restaurantProvider } from 'src/infrastructure/providers/restaurant.provider';
 
 @Module({
-  imports: [DatabaseModule],
+  imports: [DatabaseModule, AuthModule],
   controllers: [CompanyController],
   providers: [
     ...companyProvider,
@@ -40,6 +44,7 @@ import { CompanyOrderRepository } from 'src/infrastructure/database/repositories
     ...orderItemProvider,
     ...dishProvider,
     ...companyOrderProvider,
+    ...restaurantProvider,
     CompanyRepository,
     UserRepository,
     EmployeeRepository,
@@ -48,16 +53,18 @@ import { CompanyOrderRepository } from 'src/infrastructure/database/repositories
     OrderItemRepository,
     DishRepository,
     CompanyOrderRepository,
+    RestaurantRepository,
+    UploadOwnershipGuard,
     ListCompaniesService,
-    GetCompanyByIdService, 
-    CreateCompanyService, 
-    UpdateCompanyService, 
+    GetCompanyByIdService,
+    CreateCompanyService,
+    UpdateCompanyService,
     DeleteCompanyService,
     ListEmployeesByCompanyService,
     ListIndividualOrderByCompanyUseCase,
     CreateCompanyOrderUseCase,
     ListWeeklyOrdersByCompanyService,
-    CreateOrdersFromWeeklyOrdersUseCase
+    CreateOrdersFromWeeklyOrdersUseCase,
   ],
   exports: [
     ListCompaniesService,
@@ -69,7 +76,7 @@ import { CompanyOrderRepository } from 'src/infrastructure/database/repositories
     ListIndividualOrderByCompanyUseCase,
     CreateCompanyOrderUseCase,
     ListWeeklyOrdersByCompanyService,
-    CreateOrdersFromWeeklyOrdersUseCase
-  ]
+    CreateOrdersFromWeeklyOrdersUseCase,
+  ],
 })
 export class CompanyModule {}

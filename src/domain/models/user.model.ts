@@ -1,7 +1,6 @@
-import { CompanyEntityInterface } from "src/domain/repositories/company.repository.interface";
-import { EmployeeEntityInterface } from "src/domain/repositories/employee.repository.interface";
-import { RestaurantEntityInterface } from "src/domain/repositories/restaurant.repository.interface";
-
+import { CompanyEntityInterface } from 'src/domain/repositories/company.repository.interface';
+import { EmployeeEntityInterface } from 'src/domain/repositories/employee.repository.interface';
+import { RestaurantEntityInterface } from 'src/domain/repositories/restaurant.repository.interface';
 
 export enum UserType {
   COMPANY = 'company',

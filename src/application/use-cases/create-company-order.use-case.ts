@@ -5,7 +5,6 @@ import { CompanyRepository } from '../../infrastructure/database/repositories/co
 import { RestaurantRepository } from '../../infrastructure/database/repositories/restaurant.repository';
 import { EmployeeRepository } from '../../infrastructure/database/repositories/employee.repository';
 import { DishRepository } from '../../infrastructure/database/repositories/dish.repository';
-import { CreateCompanyOrderDto } from '../../interfaces/http/dtos/request/create-company-order.dto';
 import { CompanyOrderStatus } from '../../domain/repositories/company-order.repository.interface';
 import { IndividualOrderStatus } from '../../domain/repositories/individual-order.repository.interface';
 
@@ -26,19 +25,30 @@ export class CreateCompanyOrderUseCase {
     private readonly dishRepository: DishRepository,
   ) {}
 
-  async execute(companyId: number): Promise<{message: string, id: number}> {
+  async execute(companyId: number): Promise<{ message: string; id: number }> {
+    const createOrderDto =
+      await this.individualOrderRepository.listByCompanyOrderIdNull(companyId);
 
-    const createOrderDto = await this.individualOrderRepository.listByCompanyOrderIdNull(companyId);
+    // Verificar se existem pedidos pendentes
+    if (!createOrderDto || createOrderDto.length === 0) {
+      throw new NotFoundException(
+        'Nenhum pedido individual pendente encontrado para esta empresa',
+      );
+    }
 
     // Validar se a empresa existe
-    const company = await this.companyRepository.getById(createOrderDto[0].companyId);
+    const company = await this.companyRepository.getById(
+      createOrderDto[0].companyId,
+    );
 
     if (!company) {
       throw new NotFoundException('Empresa não encontrada');
     }
 
     // Validar se o restaurante existe
-    const restaurant = await this.restaurantRepository.getById(createOrderDto[0].restaurantId);
+    const restaurant = await this.restaurantRepository.getById(
+      createOrderDto[0].restaurantId,
+    );
 
     if (!restaurant) {
       throw new NotFoundException('Restaurante não encontrado');
@@ -49,7 +59,9 @@ export class CreateCompanyOrderUseCase {
       const employee = await this.employeeRepository.getById(order.employeeId);
 
       if (!employee) {
-        throw new NotFoundException(`Funcionário com ID ${order.employeeId} não encontrado`);  
+        throw new NotFoundException(
+          `Funcionário com ID ${order.employeeId} não encontrado`,
+        );
       }
     }
 
@@ -57,7 +69,9 @@ export class CreateCompanyOrderUseCase {
     for (const order of createOrderDto) {
       const dish = await this.dishRepository.getById(order.dishId);
       if (!dish) {
-        throw new NotFoundException(`Prato com ID ${order.dishId} não encontrado`);
+        throw new NotFoundException(
+          `Prato com ID ${order.dishId} não encontrado`,
+        );
       }
     }
 
@@ -65,7 +79,7 @@ export class CreateCompanyOrderUseCase {
     const companyOrder = await this.companyOrderRepository.create({
       companyId: createOrderDto[0].companyId,
       restaurantId: createOrderDto[0].restaurantId,
-      status: CompanyOrderStatus.PENDING,
+      status: CompanyOrderStatus.CREATED,
     });
     // Criar os pedidos individuais dos funcionários
     for (const order of createOrderDto) {
@@ -81,4 +95,4 @@ export class CreateCompanyOrderUseCase {
       message: 'Pedido criado com sucesso',
     };
   }
-} 
+}

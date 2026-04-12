@@ -11,4 +11,6 @@ export interface EmployeeWeeklyOrdersEntityInterface {
   orderItemId: number;
   order?: OrderItemEntityInterface;
   dish?: DishEntityInterface;
+  createdAt?: Date;
+  updatedAt?: Date;
 }

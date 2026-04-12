@@ -6,9 +6,12 @@ import { DishRepository } from '../../infrastructure/database/repositories/dish.
 export class UpdateDishService {
   constructor(
     @Inject('DISH_REPOSITORY')
-    private readonly dishRepository: DishRepository
+    private readonly dishRepository: DishRepository,
   ) {}
-  async execute(id: number, productData: DishInterface): Promise<DishInterface> {
+  async execute(
+    id: number,
+    productData: DishInterface,
+  ): Promise<DishInterface> {
     return await this.dishRepository.update(id, productData);
   }
 }

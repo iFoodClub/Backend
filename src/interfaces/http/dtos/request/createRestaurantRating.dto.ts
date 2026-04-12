@@ -10,6 +10,9 @@ export class CreateRestaurantRatingDto {
   @ApiProperty({ example: 5, description: 'Nota da avaliação (1 a 5)' })
   rating: number;
 
-  @ApiProperty({ example: 'Excelente atendimento e comida deliciosa!', description: 'Descrição da avaliação' })
+  @ApiProperty({
+    example: 'Excelente atendimento e comida deliciosa!',
+    description: 'Descrição da avaliação',
+  })
   description: string;
-} 
+}

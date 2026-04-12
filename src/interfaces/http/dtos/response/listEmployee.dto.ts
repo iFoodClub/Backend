@@ -49,4 +49,11 @@ export class ListEmployeeDtoResponse {
         example: false,
     })
     vacation: boolean;
+
+    @ApiProperty({
+        description: 'Email do funcionário',
+        type: String,
+        example: 'joao.silva@email.com',
+    })
+    email: string;
 }
