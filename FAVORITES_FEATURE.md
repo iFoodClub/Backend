@@ -9,9 +9,13 @@ Este documento detalha as mudanças realizadas para implementar o sistema de fav
 - **Segurança**: Implementada validação no UseCase (`ToggleFavoriteUseCase`) que bloqueia requisições de funcionários (403 Forbidden).
 - **Interface**: Adicionado ícone de coração interativo nos cards de restaurante (Mobile).
 
-### 2. Otimização de Performance (Eager Loading)
-- **Refatoração de Repositórios**: `CompanyRepository` e `EmployeeRepository` agora utilizam `include` do Sequelize para trazer o restaurante selecionado automaticamente.
-- **Benefício**: Redução de chamadas à API no carregamento da Home do App, eliminando a latência de buscar o restaurante em uma requisição separada.
+### 2. Enriquecimento de Dados e Imagens
+- **Otimização de Retorno**: A listagem de favoritos agora retorna automaticamente a **média de avaliações**, **quantidade de pratos** e o **menor preço**, eliminando cálculos no frontend.
+- **Padronização de Imagens**: O campo de imagem foi padronizado como `profileImage` em todo o sistema, garantindo que as fotos dos restaurantes apareçam corretamente tanto na aba geral quanto nos favoritos.
+
+### 3. Estabilidade e Performance
+- **Correção de Crash (Mobile)**: Resolvido o "Require Cycle" entre `authStore` e `baseRepository` que impedia o app de abrir.
+- **Seeder de Teste**: Criado seeder `insert-favorite-restaurants` para popular o ambiente de desenvolvimento.
 
 ---
 
@@ -39,4 +43,5 @@ Este documento detalha as mudanças realizadas para implementar o sistema de fav
 4. Note que funcionários não veem a opção de favoritar, mantendo a interface limpa.
 
 ---
-*Documentação gerada automaticamente em 29/04/2026.*
+---
+*Última atualização em 29/04/2026 às 20:10.*
