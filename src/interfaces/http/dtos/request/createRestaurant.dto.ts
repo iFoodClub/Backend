@@ -74,4 +74,20 @@ export class CreateRestaurantDto {
     required: false,
   })
   profileImage?: string;
+
+  @ApiProperty({
+    description: 'Horário de abertura do restaurante',
+    type: String,
+    example: '08:00',
+    required: false,
+  })
+  openingTime?: string;
+
+  @ApiProperty({
+    description: 'Horário de fechamento do restaurante',
+    type: String,
+    example: '22:00',
+    required: false,
+  })
+  closingTime?: string;
 }

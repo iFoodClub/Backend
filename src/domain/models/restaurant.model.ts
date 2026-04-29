@@ -14,6 +14,8 @@ export interface RestaurantInterface {
     number: string;
     complemento?: string;
     profileImage?: string;
+    openingTime?: string;
+    closingTime?: string;
     averageRating?: number;
     minPrice?: number;
     dishCount?: number;

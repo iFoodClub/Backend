@@ -76,6 +76,20 @@ export class RestaurantEntity extends Model {
   })
   image: string;
 
+  @Column({
+    type: DataType.STRING(10),
+    allowNull: true,
+    field: 'openingTime',
+  })
+  openingTime: string;
+
+  @Column({
+    type: DataType.STRING(10),
+    allowNull: true,
+    field: 'closingTime',
+  })
+  closingTime: string;
+
   @BelongsTo(() => UserEntity)
   user: UserEntity;
 

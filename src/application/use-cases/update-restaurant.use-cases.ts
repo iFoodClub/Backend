@@ -28,7 +28,9 @@ export class UpdateRestaurantService {
       estado: restaurant.estado,
       number: restaurant.number,
       complemento: restaurant.complemento,
-      profileImage: restaurantData.profileImage
+      profileImage: restaurantData.profileImage,
+      openingTime: restaurant.openingTime,
+      closingTime: restaurant.closingTime,
     }
   }
 }
