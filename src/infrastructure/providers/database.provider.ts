@@ -11,6 +11,7 @@ import { IndividualOrderEntity } from '../database/entities/individual-order.ent
 import { EmployeeWeeklyOrdersEntity } from '../database/entities/employee-weekly-orders.entity';
 import { CompanyOrderEntity } from '../database/entities/company-order.entity';
 import { RestaurantRatingEntity } from '../database/entities/restaurant-rating.entity';
+import { FavoriteRestaurantEntity } from '../database/entities/favorite-restaurant.entity';
 import { SequelizeSecurityConfig } from '../security/sequelize-security.config';
 
 export const databaseProvider = [
@@ -46,6 +47,7 @@ export const databaseProvider = [
         EmployeeWeeklyOrdersEntity,
         CompanyOrderEntity,
         RestaurantRatingEntity,
+        FavoriteRestaurantEntity,
       ]);
 
       // Aplica configurações de segurança

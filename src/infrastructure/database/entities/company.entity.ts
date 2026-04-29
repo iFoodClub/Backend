@@ -54,6 +54,9 @@ export class CompanyEntity extends Model {
   })
   restaurantId: number;
 
+  @BelongsTo(() => RestaurantEntity)
+  restaurant: RestaurantEntity;
+
   @BelongsTo(() => UserEntity)
   user: UserEntity;
 

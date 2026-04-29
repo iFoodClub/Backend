@@ -4,6 +4,7 @@ import { EmployeeEntityInterface } from '../../../domain/repositories/employee.r
 import { UserEntity } from '../entities/user.entity';
 import { CompanyEntity } from '../entities/company.entity';
 import { IEmployeePopulate } from '../../../domain/models/employee.model';
+import { RestaurantEntity } from '../entities/restaurant.entity';
 
 @Injectable()
 export class EmployeeRepository {
@@ -22,7 +23,7 @@ export class EmployeeRepository {
         {
           model: this.companyEntity,
           as: 'company',
-          attributes: ['id', 'restaurantId'],
+          include: [{ model: RestaurantEntity }],
         },
       ],
     });
@@ -33,6 +34,7 @@ export class EmployeeRepository {
       company: {
         id: employee.company?.id || employee.companyId,
         selectedRestaurantId: employee.company?.restaurantId || null,
+        restaurant: employee.company?.restaurant || null,
       },
       name: employee.name,
       cpf: employee.cpf,
@@ -60,7 +62,7 @@ export class EmployeeRepository {
         {
           model: this.companyEntity,
           as: 'company',
-          attributes: ['id', 'restaurantId'],
+          include: [{ model: RestaurantEntity }],
         },
       ],
     });
@@ -75,6 +77,7 @@ export class EmployeeRepository {
       company: {
         id: employee.company?.id || employee.companyId,
         selectedRestaurantId: employee.company?.restaurantId || null,
+        restaurant: employee.company?.restaurant || null,
       },
       name: employee.name,
       cpf: employee.cpf,
@@ -133,7 +136,33 @@ export class EmployeeRepository {
     return await this.employeeEntity.findOne({ where: { cpf } });
   }
 
-  async findByUserId(userId: number): Promise<EmployeeEntityInterface | null> {
-    return await this.employeeEntity.findOne({ where: { userId } });
+  async findByUserId(userId: number): Promise<any | null> {
+    const employee = await this.employeeEntity.findOne({ 
+      where: { userId },
+      include: [
+        {
+          model: this.companyEntity,
+          as: 'company',
+          include: [{ model: RestaurantEntity }],
+        },
+      ],
+    });
+
+    if (!employee) return null;
+
+    const result = {
+      id: employee.id,
+      userId: employee.userId,
+      company: {
+        id: employee.company?.id || employee.companyId,
+        selectedRestaurantId: employee.company?.restaurantId || null,
+        restaurant: employee.company?.restaurant || null,
+      },
+      name: employee.name,
+      cpf: employee.cpf,
+      profileImage: employee.user?.profileImage || null,
+    };
+    console.log('--- LOG: Employee with Company and Restaurant ---', JSON.stringify(result, null, 2));
+    return result;
   }
 }

@@ -28,10 +28,11 @@ import { CompanyRepository } from 'src/infrastructure/database/repositories/comp
 import { EmployeeRepository } from 'src/infrastructure/database/repositories/employee.repository';
 import { DishRepository } from 'src/infrastructure/database/repositories/dish.repository';
 import { AuthModule } from './auth.module';
+import { FavoriteModule } from './favorite.module';
 import { UploadOwnershipGuard } from 'src/infrastructure/guards/upload-ownership.guard';
 
 @Module({
-  imports: [DatabaseModule, AuthModule],
+  imports: [DatabaseModule, AuthModule, FavoriteModule],
   controllers: [RestaurantController],
   providers: [
     ...restaurantProvider,

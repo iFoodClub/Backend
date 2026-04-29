@@ -19,6 +19,7 @@ export interface IEmployeePopulate {
     company: {
         id: number;
         selectedRestaurantId: number | null;
+        restaurant?: any;
     };
     name: string;
     cpf: string;

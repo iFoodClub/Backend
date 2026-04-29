@@ -1,3 +1,4 @@
+// API Version: 1.0.1 - Added Favorites
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
@@ -41,6 +42,7 @@ async function bootstrap() {
     .addTag('restaurants', 'Gerenciamento de restaurantes')
     .addTag('dishes', 'Gerenciamento de pratos')
     .addTag('employees', 'Gerenciamento de funcionários')
+    .addTag('Favorites', 'Gerenciamento de restaurantes favoritos (Empresas)')
     .addBearerAuth(
       {
         type: 'http',

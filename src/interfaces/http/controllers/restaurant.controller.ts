@@ -51,6 +51,10 @@ import { OrderProgressDto } from 'src/interfaces/http/dtos/response/order-progre
 import { SqlInjectionGuard } from '../../../infrastructure/security/sql-injection.guard';
 import { InputValidationPipe } from '../../../infrastructure/security/input-validation.pipe';
 import { JwtAuthGuard } from 'src/infrastructure/guards/jwt-auth.guard';
+import { ToggleFavoriteUseCase } from 'src/application/use-cases/toggle-favorite.use-case';
+import { ListFavoritesUseCase } from 'src/application/use-cases/list-favorites.use-case';
+import { UserType } from 'src/domain/models/user.model';
+import { ApiOperation } from '@nestjs/swagger';
 import { UploadAuthorizationGuard } from 'src/infrastructure/guards/upload-authorization.guard';
 import { UploadOwnershipGuard } from 'src/infrastructure/guards/upload-ownership.guard';
 
@@ -77,6 +81,8 @@ export class RestaurantController {
     private updateIndividualOrderStatusUseCase: UpdateIndividualOrderStatusUseCase,
     private updateCompanyOrderStatusUseCase: UpdateCompanyOrderStatusUseCase,
     private getOrderProgressUseCase: GetOrderProgressUseCase,
+    private toggleFavoriteUseCase: ToggleFavoriteUseCase,
+    private listFavoritesUseCase: ListFavoritesUseCase,
   ) {}
 
   @Get()
@@ -554,5 +560,35 @@ export class RestaurantController {
         });
       }
     }
+  }
+
+  @ApiTags('Favorites')
+  @Post('favorites/toggle')
+  @ApiOperation({ summary: 'Adiciona ou remove um restaurante dos favoritos (apenas empresas)' })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        userId: { type: 'number', example: 7 },
+        restaurantId: { type: 'number', example: 2 },
+        userType: { type: 'string', enum: ['company', 'employee', 'restaurant'], example: 'company' }
+      }
+    }
+  })
+  @ApiResponse({ status: 200, description: 'Status de favorito alternado com sucesso' })
+  @ApiResponse({ status: 403, description: 'Proibido: Apenas empresas podem favoritar' })
+  async toggleFavorite(@Body() data: { userId: number; restaurantId: number; userType: UserType }, @Res() res: Response) {
+    const result = await this.toggleFavoriteUseCase.execute(data.userId, data.restaurantId, data.userType);
+    return res.status(200).json(result);
+  }
+
+  @ApiTags('Favorites')
+  @Get('favorites/:userId')
+  @ApiOperation({ summary: 'Lista todos os restaurantes favoritos de um usuário' })
+  @ApiParam({ name: 'userId', description: 'ID do usuário' })
+  @ApiResponse({ status: 200, description: 'Lista de favoritos retornada com sucesso' })
+  async listFavorites(@Param('userId') userId: string, @Res() res: Response) {
+    const favorites = await this.listFavoritesUseCase.execute(Number(userId));
+    return res.status(200).json(favorites);
   }
 }
