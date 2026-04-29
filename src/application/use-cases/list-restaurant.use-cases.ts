@@ -57,7 +57,7 @@ export class ListRestaurantService {
             cidade: restaurant.cidade,
             estado: restaurant.estado,
             complemento: restaurant.complemento,
-            profileImage: user.profileImage,
+            profileImage: restaurant.profileImage || user.profileImage,
             averageRating: restaurantRatings[index].averageRating,
             minPrice: minPrice,
             dishCount: dishCount,

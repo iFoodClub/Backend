@@ -73,8 +73,9 @@ export class RestaurantEntity extends Model {
   @Column({
     type: DataType.STRING(200),
     allowNull: true,
+    field: 'image',
   })
-  image: string;
+  profileImage: string;
 
   @Column({
     type: DataType.STRING(10),
