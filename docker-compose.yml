@@ -10,10 +10,14 @@ services:
     ports:
       - "3000:3000"
     environment:
-      - NODE_ENV=production
-      - DATABASE_URL=postgres://postgres:postgres@db:5432/foodclub
-      - JWT_SECRET=${JWT_SECRET}
-      - JWT_EXPIRATION=${JWT_EXPIRATION}
+      - NODE_ENV=development
+      - DB_HOST=db
+      - DB_PORT=5432
+      - DB_USERNAME=postgres
+      - DB_PASSWORD=postgres
+      - DB_DATABASE=foodclub
+      - JWT_SECRET=${JWT_SECRET:-local_development_secret_key_123}
+      - JWT_EXPIRATION=${JWT_EXPIRATION:-3600}
     depends_on:
       - db
     networks:
@@ -35,6 +39,18 @@ services:
     networks:
       - foodclub-network
     restart: unless-stopped
+
+  # Interface web para o banco de dados
+  adminer:
+    image: adminer
+    container_name: foodclub-adminer
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    networks:
+      - foodclub-network
+    depends_on:
+      - db
 
 networks:
   foodclub-network:

@@ -104,9 +104,6 @@ export class ListOrdersByRestaurantUseCase {
         employeeOrders,
       };
     }));
-    if (!orders || orders.length === 0) {
-      throw new NotFoundException('Nenhum pedido encontrado para este restaurante.');
-    }
     return companyOrders;
   }
-} 
+}

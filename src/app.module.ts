@@ -22,15 +22,15 @@ import { EmployeeWeeklyOrdersModule } from './interfaces/http/employee-weekly-or
 import { HealthCheckModule } from './interfaces/http/health-check.module';
 import { SecurityModule } from './infrastructure/security/security.module';
 import { UploadModule } from './interfaces/http/upload.module';
-import { ObservabilityModule } from './interfaces/http/observability.module';
+// import { ObservabilityModule } from './interfaces/http/observability.module';
 import { APP_INTERCEPTOR } from '@nestjs/core';
-import { MetricsInterceptor } from './infrastructure/observability/metrics.interceptor';
+// import { MetricsInterceptor } from './infrastructure/observability/metrics.interceptor';
 // import { AuditLogModule } from './interfaces/http/audit-log.module'; // Desabilitado temporariamente - Mongoose/MongoDB
 
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
-    ObservabilityModule,
+    // ObservabilityModule,
     // AuditLogModule, // Desabilitado temporariamente - Mongoose/MongoDB
     CompanyModule,
     DishModule,
@@ -58,10 +58,10 @@ import { MetricsInterceptor } from './infrastructure/observability/metrics.inter
     RestaurantRatingController,
   ],
   providers: [
-    {
-      provide: APP_INTERCEPTOR,
-      useClass: MetricsInterceptor,
-    },
+    // {
+    //   provide: APP_INTERCEPTOR,
+    //   useClass: MetricsInterceptor,
+    // },
   ],
 })
 export class AppModule {}

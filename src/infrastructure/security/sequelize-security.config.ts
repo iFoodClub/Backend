@@ -19,10 +19,10 @@ export class SequelizeSecurityConfig {
       // Força uso de prepared statements
       prepare: true,
       // Configurações SSL
-      ssl: {
-        require: true,
-        rejectUnauthorized: false
-      }
+      // ssl: {
+      //   require: true,
+      //   rejectUnauthorized: false
+      // }
     };
 
     // Hook para sanitizar queries antes da execução

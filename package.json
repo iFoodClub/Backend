@@ -14,8 +14,11 @@
     "start:prod": "npm run db:migrate && node dist/main",
     "start:prod:init": "sh scripts/start-with-init.sh",
     "db:migrate": "npx sequelize-cli db:migrate --config src/infrastructure/database/config.js --env production",
+    "db:migrate:dev": "npx sequelize-cli db:migrate --config src/infrastructure/database/config.js --env development",
     "db:seed": "npx sequelize-cli db:seed:all --config src/infrastructure/database/config.js --env production",
+    "db:seed:dev": "npx sequelize-cli db:seed:all --config src/infrastructure/database/config.js --env development",
     "db:seed:undo": "npx sequelize-cli db:seed:undo:all --config src/infrastructure/database/config.js --env production",
+    "db:seed:undo:dev": "npx sequelize-cli db:seed:undo:all --config src/infrastructure/database/config.js --env development",
     "lint": "eslint \"{src,apps,libs,test}/**/*.ts\" --fix"
   },
   "dependencies": {
