@@ -48,6 +48,47 @@ import { InputValidationPipe } from '../../../infrastructure/security/input-vali
 import { JwtAuthGuard } from 'src/infrastructure/guards/jwt-auth.guard';
 import { UploadAuthorizationGuard } from 'src/infrastructure/guards/upload-authorization.guard';
 import { UploadOwnershipGuard } from 'src/infrastructure/guards/upload-ownership.guard';
+import { UniqueConstraintError } from 'sequelize';
+
+function friendlyCompanyCreateErrorMessage(error: unknown): string {
+  if (error instanceof BadRequestException) {
+    const r = error.getResponse();
+    if (typeof r === 'object' && r !== null && 'message' in r) {
+      const m = (r as { message: string | string[] }).message;
+      return Array.isArray(m) ? m.join('; ') : String(m);
+    }
+    return error.message;
+  }
+  if (error instanceof UniqueConstraintError) {
+    const path = error.errors?.[0]?.path;
+    const constraint = (error as { parent?: { constraint?: string } }).parent
+      ?.constraint;
+    if (path === 'id' || constraint === 'company_pkey') {
+      return 'Não foi possível concluir o cadastro: conflito no identificador da empresa. Execute as migrations mais recentes ou sincronize a sequência da tabela company.';
+    }
+    if (path === 'cnpj' || constraint?.includes('cnpj')) {
+      return 'Já existe uma empresa cadastrada com este CNPJ.';
+    }
+    return 'Dados duplicados: verifique CNPJ ou outros campos únicos.';
+  }
+  const pg = error as {
+    parent?: { code?: string; constraint?: string };
+    message?: string;
+  };
+  if (pg?.parent?.code === '23505') {
+    if (
+      pg.parent.constraint === 'company_pkey' ||
+      pg.message?.includes('company_pkey')
+    ) {
+      return 'Não foi possível concluir o cadastro: conflito no identificador da empresa. Execute as migrations mais recentes ou sincronize a sequência da tabela company.';
+    }
+    return 'Registro duplicado: verifique o CNPJ ou outros campos únicos.';
+  }
+  if (error instanceof Error) {
+    return error.message;
+  }
+  return 'Erro ao criar empresa.';
+}
 
 @ApiTags('Company API')
 @Controller('company')
@@ -148,7 +189,7 @@ export class CompanyController {
     } catch (error) {
       res.status(400).json({
         success: false,
-        message: error.message,
+        message: friendlyCompanyCreateErrorMessage(error),
       });
     }
   }

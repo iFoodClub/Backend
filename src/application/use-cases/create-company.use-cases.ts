@@ -2,7 +2,8 @@ import { Inject, Injectable, BadRequestException } from "@nestjs/common";
 import { CompanyEntityInterface } from "../../domain/repositories/company.repository.interface";
 import { CompanyRepository } from '../../infrastructure/database/repositories/company.repository';
 import { UserRepository } from 'src/infrastructure/database/repositories/user.repository';
-import { validateCNPJ } from '../../domain/utils/cnpj-validator';
+import { UserType } from 'src/domain/repositories/user.repository.interface';
+import { UserProfileEligibilityService } from './user-profile-eligibility.service';
 
 @Injectable()
 export class CreateCompanyService {
@@ -10,20 +11,25 @@ export class CreateCompanyService {
         @Inject('COMPANY_REPOSITORY')
         private readonly companyRepository: CompanyRepository,
         @Inject('USER_REPOSITORY')
-        private readonly userRepository: UserRepository
+        private readonly userRepository: UserRepository,
+        private readonly userProfileEligibilityService: UserProfileEligibilityService,
     ) {}
 
     async execute(company: CompanyEntityInterface): Promise<CompanyEntityInterface> {
-        const { userId, cnpj } = company;
-        if(company.profileImage){
-            const user = await this.userRepository.updateImage(userId, {profileImage: company.profileImage});
-            if(!user){
+        const { userId } = company;
+
+        await this.userProfileEligibilityService.assertEligibleForProfile(
+            userId,
+            UserType.COMPANY,
+        );
+
+        if (company.profileImage) {
+            const updated = await this.userRepository.updateImage(userId, {
+                profileImage: company.profileImage,
+            });
+            if (!updated) {
                 throw new BadRequestException('Usuário não encontrado');
             }
-        }
-        const user = await this.userRepository.getById(userId);
-        if (!user) {
-            throw new BadRequestException('Usuário não encontrado');
         }
 
         const validate = await this.validateUserCreateCompany(company);

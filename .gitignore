@@ -1,6 +1,9 @@
 # Environment variables
 .env
 
+docs/*.md
+test/*.md
+scripts/*.ps1
 # Dependencies
 node_modules/
 dist/

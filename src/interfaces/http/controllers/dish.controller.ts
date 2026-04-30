@@ -87,7 +87,7 @@ export class DishController {
     if (!dish) {
       res.status(404).json({
         success: false,
-        message: 'Empresa não encontrada',
+        message: 'Prato não encontrado',
       });
       return;
     }

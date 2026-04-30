@@ -58,7 +58,7 @@ export class MetricsInterceptor implements NestInterceptor {
           duration,
         );
       }),
-      catchError(async (error) => {
+      catchError((error) => {
         const duration = Date.now() - startTime;
 
         // Log do erro
@@ -74,18 +74,18 @@ export class MetricsInterceptor implements NestInterceptor {
           'HTTP',
         );
 
-        // Enviar métrica de erro
-        await this.metricsService.recordApiRequest(
-          this.sanitizeEndpoint(url),
-          method,
-          error.status || 500,
-          duration,
-        );
-
-        await this.metricsService.recordError(
-          error.name || 'UnknownError',
-          'HTTP',
-        );
+        // Métricas em background (catchError deve retornar Observable, não Promise)
+        void this.metricsService
+          .recordApiRequest(
+            this.sanitizeEndpoint(url),
+            method,
+            error.status || 500,
+            duration,
+          )
+          .catch(() => undefined);
+        void this.metricsService
+          .recordError(error.name || 'UnknownError', 'HTTP')
+          .catch(() => undefined);
 
         return throwError(() => error);
       }),

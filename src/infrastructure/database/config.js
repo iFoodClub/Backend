@@ -1,4 +1,19 @@
-require('dotenv').config();
+const path = require('path');
+require('dotenv').config({
+  path: path.join(__dirname, '../../../.env'),
+});
+
+function dialectOptions() {
+  if (process.env.DB_SSL === 'false') {
+    return {};
+  }
+  return {
+    ssl: {
+      require: true,
+      rejectUnauthorized: false,
+    },
+  };
+}
 
 module.exports = {
   development: {
@@ -9,12 +24,7 @@ module.exports = {
     port: process.env.DB_PORT,
     dialect: 'postgres',
     logging: false,
-    dialectOptions: {
-      ssl: {
-        require: true,
-        rejectUnauthorized: false // configurado por conta do render, apenas
-      }
-    }
+    dialectOptions: dialectOptions(),
   },
   production: {
     username: process.env.DB_USERNAME,
@@ -24,11 +34,6 @@ module.exports = {
     port: process.env.DB_PORT,
     dialect: 'postgres',
     logging: false,
-    dialectOptions: {
-      ssl: {
-        require: true,
-        rejectUnauthorized: false // configurado por conta do render, apenas
-      }
-    }
-  }
-}
+    dialectOptions: dialectOptions(),
+  },
+};

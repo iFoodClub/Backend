@@ -10,7 +10,6 @@ import { RestaurantModule } from './interfaces/http/restaurant.module';
 import { EmployeeController } from './interfaces/http/controllers/employee.controller';
 import { RestaurantController } from './interfaces/http/controllers/restaurant.controller';
 import { CompanyController } from './interfaces/http/controllers/company.controller';
-import { UserController } from './interfaces/http/controllers/user.controller';
 import { UserModule } from './interfaces/http/user.module';
 import { DishRatingControlller } from './interfaces/http/controllers/dish-rating.controller';
 import { DishRatingModule } from './interfaces/http/dish-rating.module';
@@ -53,7 +52,6 @@ import { MetricsInterceptor } from './infrastructure/observability/metrics.inter
     EmployeeController,
     DishRatingControlller,
     RestaurantController,
-    UserController,
     EmployeeWeeklyOrdersController,
     RestaurantRatingController,
   ],

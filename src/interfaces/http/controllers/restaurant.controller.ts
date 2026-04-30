@@ -118,7 +118,7 @@ export class RestaurantController {
     if (!product) {
       res.status(404).json({
         success: false,
-        message: 'Empresa não encontrada',
+        message: 'Restaurante não encontrado',
       });
       return;
     }

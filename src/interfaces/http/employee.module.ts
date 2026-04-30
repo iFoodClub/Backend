@@ -18,6 +18,8 @@ import { RestaurantRepository } from 'src/infrastructure/database/repositories/r
 import { restaurantProvider } from 'src/infrastructure/providers/restaurant.provider';
 import { DishRepository } from 'src/infrastructure/database/repositories/dish.repository';
 import { dishProvider } from 'src/infrastructure/providers/dish.provider';
+import { UserRepository } from 'src/infrastructure/database/repositories/user.repository';
+import { UserProfileEligibilityService } from 'src/application/use-cases/user-profile-eligibility.service';
 
 @Module({
   imports: [DatabaseModule, AuthModule],
@@ -31,6 +33,8 @@ import { dishProvider } from 'src/infrastructure/providers/dish.provider';
     CompanyRepository,
     RestaurantRepository,
     DishRepository,
+    UserRepository,
+    UserProfileEligibilityService,
     ListEmployeesService,
     GetEmployeeByIdService,
     CreateEmployeeService,

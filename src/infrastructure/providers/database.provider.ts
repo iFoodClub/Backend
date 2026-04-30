@@ -17,6 +17,7 @@ export const databaseProvider = [
   {
     provide: 'SEQUELIZE',
     useFactory: () => {
+      const useSsl = process.env.DB_SSL !== 'false';
       const sequelize = new Sequelize({
         host: process.env.DB_HOST,
         port: Number(process.env.DB_PORT),
@@ -24,12 +25,14 @@ export const databaseProvider = [
         password: process.env.DB_PASSWORD,
         database: process.env.DB_DATABASE,
         dialect: 'postgres',
-        dialectOptions: {
-          ssl: {
-            require: true,
-            rejectUnauthorized: false,
-          },
-        },
+        dialectOptions: useSsl
+          ? {
+              ssl: {
+                require: true,
+                rejectUnauthorized: false,
+              },
+            }
+          : {},
         logging: false,
       });
 

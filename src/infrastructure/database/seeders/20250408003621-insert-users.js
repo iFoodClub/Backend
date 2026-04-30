@@ -12,7 +12,7 @@ module.exports = {
     
 
 
-    return queryInterface.bulkInsert('user', [
+    await queryInterface.bulkInsert('user', [
       // Restaurants (6)
       {
         id: 1,
@@ -124,6 +124,14 @@ module.exports = {
         profile_image:'https://media.gettyimages.com/id/1305462732/pt/foto/headshot-studio-portrait-of-a-woman-in-profile-looking-at-the-camera.jpg?s=612x612&w=0&k=20&c=X7uJWxc-eqzPg762gKSAKR0Isxn_xLYSyZ0VxCfD8Qo='
       }
     ]);
+
+    await queryInterface.sequelize.query(
+      `SELECT setval(
+        pg_get_serial_sequence('"user"', 'id'),
+        (SELECT MAX(id) FROM "user"),
+        true
+      );`,
+    );
   },
 
   async down(queryInterface, Sequelize) {
