@@ -17,6 +17,7 @@ function dialectOptions() {
 
 module.exports = {
   development: {
+    url: process.env.DATABASE_URL,
     username: process.env.DB_USERNAME,
     password: process.env.DB_PASSWORD,
     database: process.env.DB_DATABASE,
@@ -27,6 +28,7 @@ module.exports = {
     dialectOptions: dialectOptions(),
   },
   production: {
+    url: process.env.DATABASE_URL,
     username: process.env.DB_USERNAME,
     password: process.env.DB_PASSWORD,
     database: process.env.DB_DATABASE,

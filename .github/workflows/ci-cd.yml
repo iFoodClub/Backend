@@ -112,88 +112,73 @@ jobs:
           
           echo "Generated Version: $new_version"
           echo "version=${new_version}" >> $GITHUB_OUTPUT
-
-  deploy:
-    name: Deploy to AWS
+  docker_build_push_acr:
+    name: Build and Push to ACR
     needs: [build, version]
-    if: false # Desabilitado - usando apenas Render
-    runs-on: ubuntu-latest
-    steps:
-      - name: Determine Environment Name
-        run: |
-          if [ "${{ github.ref }}" == "refs/heads/main" ]; then
-            echo "EB_ENV_NAME=FoodClub-App-prod" >> $GITHUB_ENV
-          elif [ "${{ github.ref }}" == "refs/heads/development" ]; then
-            echo "EB_ENV_NAME=FoodClub-App-env" >> $GITHUB_ENV
-          fi
-      - name: Download build artifacts
-        uses: actions/download-artifact@v4
-        with:
-          name: production-artifacts
-          path: .
-      - name: Generate deployment package
-        run: zip -r deploy.zip .
-      - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ env.AWS_REGION }}
-      - name: Deploy to Elastic Beanstalk
-        uses: einaregilsson/beanstalk-deploy@v21
-        with:
-          aws_access_key: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws_secret_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          application_name: ${{ env.EB_APP_NAME }}
-          environment_name: ${{ env.EB_ENV_NAME }}
-          version_label: ${{ needs.version.outputs.new_version }}
-          region: ${{ env.AWS_REGION }}
-          deployment_package: deploy.zip
-
-  docker_build_push:
-    name: Build and Push Docker Image
-    needs: [build, version]
-    if: github.event_name == 'push' && github.ref == 'refs/heads/development'
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/development')
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-      
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-      
-      - name: Login to Docker Hub
-        uses: docker/login-action@v3
+
+      - name: Azure Login
+        uses: azure/login@v2
         with:
-          username: ${{ secrets.DOCKER_HUB_USERNAME }}
-          password: ${{ secrets.DOCKER_HUB_TOKEN }}
-      
-      - name: Extract metadata (tags, labels)
-        id: meta
-        uses: docker/metadata-action@v5
-        with:
-          images: ${{ secrets.DOCKER_HUB_USERNAME }}/foodclub-backend
-          tags: |
-            type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
-            type=raw,value=development,enable=${{ github.ref == 'refs/heads/development' }}
-            type=raw,value=${{ needs.version.outputs.new_version }}
-            type=sha,prefix={{branch}}-
-      
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: ACR Login
+        run: |
+          echo ${{ secrets.ACR_PASSWORD }} | docker login acrfoodclub.azurecr.io -u ${{ secrets.ACR_USERNAME }} --password-stdin
+
+      - name: Set Image Tag
+        run: |
+          if [ "${{ github.ref_name }}" == "main" ]; then
+            echo "IMAGE_TAG=prod" >> $GITHUB_ENV
+          else
+            echo "IMAGE_TAG=hml" >> $GITHUB_ENV
+          fi
+
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
         with:
           context: .
           file: ./Dockerfile
           push: true
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=registry,ref=${{ secrets.DOCKER_HUB_USERNAME }}/foodclub-backend:buildcache
-          cache-to: type=registry,ref=${{ secrets.DOCKER_HUB_USERNAME }}/foodclub-backend:buildcache,mode=max
+          tags: |
+            acrfoodclub.azurecr.io/foodclub-api:${{ env.IMAGE_TAG }}
+            acrfoodclub.azurecr.io/foodclub-api:${{ needs.version.outputs.new_version }}
           platforms: linux/amd64
+
+  deploy_azure:
+    name: Deploy to Azure Container Apps
+    needs: [docker_build_push_acr, version]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Azure Login
+        uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Set Deployment Env
+        run: |
+          if [ "${{ github.ref_name }}" == "main" ]; then
+            echo "APP_NAME=api-foodclub-prod" >> $GITHUB_ENV
+            echo "IMAGE_TAG=prod" >> $GITHUB_ENV
+          else
+            echo "APP_NAME=api-foodclub-hml" >> $GITHUB_ENV
+            echo "IMAGE_TAG=hml" >> $GITHUB_ENV
+          fi
+
+      - name: Update Container App
+        run: |
+          az containerapp update \
+            --name ${{ env.APP_NAME }} \
+            --resource-group rg-foodclub \
+            --image acrfoodclub.azurecr.io/foodclub-api:${{ env.IMAGE_TAG }}
 
   create_release:
     name: Create GitHub Release
-    needs: [deploy, version]
+    needs: [deploy_azure, version]
     if: github.event_name == 'push'
     runs-on: ubuntu-latest
     steps:
@@ -299,7 +284,7 @@ jobs:
   
   notify_failure:
     name: Send Notification
-    needs: [validate, build, deploy, docker_build_push, create_release]
+    needs: [validate, build, deploy_azure, docker_build_push_acr, create_release]
     if: failure()
     runs-on: ubuntu-latest
     steps:
@@ -317,4 +302,4 @@ jobs:
           html_body: |
             <h2>Falha no Pipeline do FoodClub Server</h2>
             <p>Ocorreu uma falha no pipeline de CI/CD para a branch <strong>${{ github.ref_name }}</strong>.</p>
-            <p>Para ver os detalhes, <a href="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}">clique aqui</a>.</p>p>
+            <p>Para ver os detalhes, <a href="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}">clique aqui</a>.</p>
