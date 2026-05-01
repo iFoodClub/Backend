@@ -35,6 +35,8 @@ jobs:
           rm -rf ~/.npm
       - name: Install dependencies
         run: npm ci
+      - name: Run tests
+        run: npm run test -- --passWithNoTests
       # - name: Run linter
       #   run: npm run lint
 
