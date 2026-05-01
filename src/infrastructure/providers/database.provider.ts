@@ -18,31 +18,34 @@ export const databaseProvider = [
     provide: 'SEQUELIZE',
     useFactory: () => {
       const useSsl = process.env.DB_SSL !== 'false';
-      const sequelizeOptions = process.env.DATABASE_URL
+      let sequelize: Sequelize;
+      const dialectOptions = useSsl
         ? {
-            url: process.env.DATABASE_URL,
+            ssl: {
+              require: true,
+              rejectUnauthorized: false,
+            },
           }
-        : {
-            host: process.env.DB_HOST,
-            port: Number(process.env.DB_PORT),
-            username: process.env.DB_USERNAME,
-            password: process.env.DB_PASSWORD,
-            database: process.env.DB_DATABASE,
-          };
+        : {};
 
-      const sequelize = new Sequelize({
-        ...sequelizeOptions,
-        dialect: 'postgres',
-        dialectOptions: useSsl
-          ? {
-              ssl: {
-                require: true,
-                rejectUnauthorized: false,
-              },
-            }
-          : {},
-        logging: false,
-      });
+      if (process.env.DATABASE_URL) {
+        sequelize = new Sequelize(process.env.DATABASE_URL, {
+          dialect: 'postgres',
+          dialectOptions,
+          logging: false,
+        });
+      } else {
+        sequelize = new Sequelize({
+          host: process.env.DB_HOST,
+          port: Number(process.env.DB_PORT),
+          username: process.env.DB_USERNAME,
+          password: process.env.DB_PASSWORD,
+          database: process.env.DB_DATABASE,
+          dialect: 'postgres',
+          dialectOptions,
+          logging: false,
+        });
+      }
 
       sequelize.addModels([
         DishEntity,
