@@ -18,29 +18,6 @@
 - ✅ **Image Scanning com Trivy** - Verifica vulnerabilidades DO/libs na Docker image
 - ✅ **Estrutura para Dependabot** - Config criada em `.github/dependabot.yml`
 
-### 3. Arquivos Adicionados
-```
-.github/dependabot.yml (NEW)
-├── npm dependencies scanning
-├── GitHub Actions scanning
-└── Docker image scanning
-
-docs/DEVOPS_ROADMAP.md (NEW)
-├── Visão geral da infra atual
-├── 3 fases de implementação
-└── Checklist de tarefas
-
-docs/SECURITY_SETUP_PHASE1.md (NEW)
-├── Setup detalhado de cada ferramenta
-├── Troubleshooting
-└── OIDC (próximo passo)
-
-.github/workflows/ci-cd.yml (UPDATED)
-├── Novo job: security (CodeQL)
-├── Trivy scan no docker_build_push_acr
-└── Build depende de [validate, security]
-```
-
 ---
 
 ## 🔄 Estado do CI/CD Pipeline Agora
@@ -181,7 +158,7 @@ cat .github/dependabot.yml # verificar manualmente
 
 1. [DEVOPS_ROADMAP.md](docs/DEVOPS_ROADMAP.md) - Visão geral
 2. [SECURITY_SETUP_PHASE1.md](docs/SECURITY_SETUP_PHASE1.md) - Detalhes técnicos
-3. [GitHub Actions Logs](../../.github/workflows) - Vizualizar runs
+3. [GitHub Actions Logs](../../.github/workflows) - Visualizar runs
 4. [Security Tab](../../security) - Ver alerts
 
 ---

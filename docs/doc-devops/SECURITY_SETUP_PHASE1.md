@@ -183,7 +183,7 @@ No repositório, adicione:
 - Rodar em schedule (noite) ao invés de cada push
 
 ### Trivy bloqueando builds legítimos?
-- Revoir a severidade (mudar de HIGH para CRITICAL only)
+- Rever a severidade (mudar de HIGH para CRITICAL only)
 - Documentar exceções em `trivy.yaml`
 
 ### Dependabot criando PRs demais?

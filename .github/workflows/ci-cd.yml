@@ -41,6 +41,10 @@ jobs:
       #   run: npm run lint
 
   security:
+    permissions:
+      contents: read
+      actions: read
+      security-events: write
     name: Security Scans
     runs-on: ubuntu-latest
     steps:
@@ -153,33 +157,44 @@ jobs:
           echo ${{ secrets.ACR_PASSWORD }} | docker login acrfoodclub.azurecr.io -u ${{ secrets.ACR_USERNAME }} --password-stdin
 
       - name: Set Image Tag
+        id: image_tag
         run: |
           if [ "${{ github.ref_name }}" == "main" ]; then
             echo "IMAGE_TAG=prod" >> $GITHUB_ENV
+            echo "tag=prod" >> $GITHUB_OUTPUT
           else
             echo "IMAGE_TAG=hml" >> $GITHUB_ENV
+            echo "tag=hml" >> $GITHUB_OUTPUT
           fi
 
-      - name: Build and push Docker image
+      - name: Build Docker image locally
         uses: docker/build-push-action@v5
         with:
           context: .
           file: ./Dockerfile
-          push: true
+          push: false
+          load: true
           tags: |
-            acrfoodclub.azurecr.io/foodclub-api:${{ env.IMAGE_TAG }}
-            acrfoodclub.azurecr.io/foodclub-api:${{ needs.version.outputs.new_version }}
+            foodclub-api:${{ steps.image_tag.outputs.tag }}
+            foodclub-api:${{ needs.version.outputs.new_version }}
           platforms: linux/amd64
 
       - name: Run Trivy vulnerability scan
         uses: aquasecurity/trivy-action@master
         with:
-          image-ref: acrfoodclub.azurecr.io/foodclub-api:${{ env.IMAGE_TAG }}
+          image-ref: foodclub-api:${{ steps.image_tag.outputs.tag }}
           format: 'table'
           exit-code: '1'
           ignore-unfixed: true
           vuln-type: 'os,library'
           severity: 'HIGH,CRITICAL'
+
+      - name: Tag and push Docker image to ACR
+        run: |
+          docker tag foodclub-api:${IMAGE_TAG} acrfoodclub.azurecr.io/foodclub-api:${IMAGE_TAG}
+          docker tag foodclub-api:${{ needs.version.outputs.new_version }} acrfoodclub.azurecr.io/foodclub-api:${{ needs.version.outputs.new_version }}
+          docker push acrfoodclub.azurecr.io/foodclub-api:${IMAGE_TAG}
+          docker push acrfoodclub.azurecr.io/foodclub-api:${{ needs.version.outputs.new_version }}
 
   deploy_azure:
     name: Deploy to Azure Container Apps
@@ -204,9 +219,9 @@ jobs:
       - name: Update Container App
         run: |
           az containerapp update \
-            --name ${{ env.APP_NAME }} \
+            --name $APP_NAME \
             --resource-group rg-foodclub \
-            --image acrfoodclub.azurecr.io/foodclub-api:${{ env.IMAGE_TAG }}
+            --image acrfoodclub.azurecr.io/foodclub-api:${IMAGE_TAG}
 
   create_release:
     name: Create GitHub Release
