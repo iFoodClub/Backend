@@ -40,9 +40,29 @@ jobs:
       # - name: Run linter
       #   run: npm run lint
 
+  security:
+    name: Security Scans
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v2
+        with:
+          languages: 'javascript-typescript'
+
+      - name: Build for CodeQL
+        uses: github/codeql-action/autobuild@v2
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v2
+        with:
+          category: '/language:javascript-typescript'
+
   build:
     name: Build Application
-    needs: validate
+    needs: [validate, security]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -150,6 +170,16 @@ jobs:
             acrfoodclub.azurecr.io/foodclub-api:${{ env.IMAGE_TAG }}
             acrfoodclub.azurecr.io/foodclub-api:${{ needs.version.outputs.new_version }}
           platforms: linux/amd64
+
+      - name: Run Trivy vulnerability scan
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: acrfoodclub.azurecr.io/foodclub-api:${{ env.IMAGE_TAG }}
+          format: 'table'
+          exit-code: '1'
+          ignore-unfixed: true
+          vuln-type: 'os,library'
+          severity: 'HIGH,CRITICAL'
 
   deploy_azure:
     name: Deploy to Azure Container Apps
@@ -304,4 +334,4 @@ jobs:
           html_body: |
             <h2>Falha no Pipeline do FoodClub Server</h2>
             <p>Ocorreu uma falha no pipeline de CI/CD para a branch <strong>${{ github.ref_name }}</strong>.</p>
-            <p>Para ver os detalhes, <a href="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}">clique aqui</a>.</p>
+            <p>Para ver os detalhes, <a href="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}">clique aqui</a>.</p>
