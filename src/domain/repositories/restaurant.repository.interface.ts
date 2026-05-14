@@ -1,6 +1,6 @@
-import { DishEntityInterface } from "./dish.repository.interface";
-import { CompanyOrderEntityInterface } from "./company-order.repository.interface";
-import { RestaurantRatingEntityInterface } from "./restaurant-rating.repository.interface";
+import { DishEntityInterface } from './dish.repository.interface';
+import { CompanyOrderEntityInterface } from './company-order.repository.interface';
+import { RestaurantRatingEntityInterface } from './restaurant-rating.repository.interface';
 
 export interface RestaurantEntityInterface {
   id: number;
@@ -14,6 +14,8 @@ export interface RestaurantEntityInterface {
   number: string;
   complemento?: string;
   image?: string;
+  openingTime?: string;
+  closingTime?: string;
   dishes?: DishEntityInterface[];
   companyOrders?: CompanyOrderEntityInterface[];
   restaurantRatings?: RestaurantRatingEntityInterface[];

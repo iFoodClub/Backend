@@ -7,16 +7,25 @@ import { UserRepository } from 'src/infrastructure/database/repositories/user.re
 export class UpdateRestaurantService {
   constructor(
     private restaurantRepository: RestaurantRepository,
-    private userRepository: UserRepository
+    private userRepository: UserRepository,
   ) {}
-  async execute(id: number, restaurantData: RestaurantInterface): Promise<RestaurantInterface> {
-    if(restaurantData.profileImage){
-      const user = await this.userRepository.updateImage(restaurantData.userId, {profileImage: restaurantData.profileImage});
-      if(!user){
+  async execute(
+    id: number,
+    restaurantData: RestaurantInterface,
+  ): Promise<RestaurantInterface> {
+    if (restaurantData.profileImage) {
+      const user = await this.userRepository.updateImage(
+        restaurantData.userId,
+        { profileImage: restaurantData.profileImage },
+      );
+      if (!user) {
         throw new BadRequestException('Usuário não encontrado');
       }
     }
-    const restaurant = await this.restaurantRepository.update(id, restaurantData);
+    const restaurant = await this.restaurantRepository.update(
+      id,
+      restaurantData,
+    );
     return {
       id: restaurant.id,
       userId: restaurant.userId,
@@ -28,7 +37,9 @@ export class UpdateRestaurantService {
       estado: restaurant.estado,
       number: restaurant.number,
       complemento: restaurant.complemento,
-      profileImage: restaurantData.profileImage
-    }
+      profileImage: restaurantData.profileImage,
+      openingTime: restaurant.openingTime,
+      closingTime: restaurant.closingTime,
+    };
   }
 }
