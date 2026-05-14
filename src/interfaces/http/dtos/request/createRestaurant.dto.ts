@@ -1,5 +1,4 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { DishInterface } from 'src/domain/models/dish.model';
 
 export class CreateRestaurantDto {
   @ApiProperty({
@@ -74,4 +73,20 @@ export class CreateRestaurantDto {
     required: false,
   })
   profileImage?: string;
+
+  @ApiProperty({
+    description: 'Horário de abertura (HH:mm)',
+    type: String,
+    example: '08:00',
+    required: false,
+  })
+  openingTime?: string;
+
+  @ApiProperty({
+    description: 'Horário de fechamento (HH:mm)',
+    type: String,
+    example: '18:00',
+    required: false,
+  })
+  closingTime?: string;
 }
