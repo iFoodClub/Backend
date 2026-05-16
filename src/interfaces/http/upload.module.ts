@@ -1,6 +1,5 @@
 import { Module } from '@nestjs/common';
-import { S3UploadService } from '../../infrastructure/services/s3-upload.service';
-import { s3UploadProvider } from '../../infrastructure/providers/s3-upload.provider';
+import { AzureBlobUploadService } from '../../infrastructure/services/s3-upload.service';
 import { UploadController } from './controllers/upload.controller';
 import { UploadOwnershipGuard } from 'src/infrastructure/guards/upload-ownership.guard';
 import { CompanyRepository } from 'src/infrastructure/database/repositories/company.repository';
@@ -15,18 +14,17 @@ import { employeeProvider } from 'src/infrastructure/providers/employee.provider
 @Module({
   controllers: [UploadController],
   providers: [
-    ...s3UploadProvider,
     ...companyProvider,
     ...restaurantProvider,
     ...employeeProvider,
     ...dishProvider,
-    S3UploadService,
+    AzureBlobUploadService,
     UploadOwnershipGuard,
     CompanyRepository,
     RestaurantRepository,
     EmployeeRepository,
     DishRepository,
   ],
-  exports: [S3UploadService],
+  exports: [AzureBlobUploadService],
 })
 export class UploadModule {}

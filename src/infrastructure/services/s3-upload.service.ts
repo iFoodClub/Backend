@@ -1,49 +1,54 @@
-/* eslint-disable @typescript-eslint/no-unsafe-member-access */
 import { Injectable, Logger } from '@nestjs/common';
+import { DefaultAzureCredential } from '@azure/identity';
 import {
-  S3Client,
-  PutObjectCommand,
-  DeleteObjectCommand,
-  GetObjectCommand,
-} from '@aws-sdk/client-s3';
-import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
+  BlobDownloadResponseParsed,
+  BlobServiceClient,
+  BlockBlobClient,
+} from '@azure/storage-blob';
 
 @Injectable()
-export class S3UploadService {
-  private readonly logger = new Logger(S3UploadService.name);
-  private readonly s3Client: S3Client;
-  private readonly bucketName: string;
-  private readonly region: string;
+export class AzureBlobUploadService {
+  private readonly logger = new Logger(AzureBlobUploadService.name);
+  private readonly blobServiceClient: BlobServiceClient;
+  private readonly containerName: string;
+  private readonly accountName: string;
 
   constructor() {
-    this.bucketName = process.env.AWS_S3_BUCKET_NAME || 'foodclub-uploads';
-    this.region = process.env.AWS_REGION || 'sa-east-1';
+    this.accountName = process.env.AZURE_STORAGE_ACCOUNT_NAME || '';
+    this.containerName =
+      process.env.AZURE_STORAGE_CONTAINER_NAME || 'app-uploads';
 
-    this.s3Client = new S3Client({
-      region: this.region,
-      credentials: {
-        accessKeyId: process.env.AWS_ACCESS_KEY_ID,
-        secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
-      },
-    });
+    if (!this.accountName) {
+      throw new Error('AZURE_STORAGE_ACCOUNT_NAME is required');
+    }
+
+    const accountUrl =
+      process.env.AZURE_STORAGE_ACCOUNT_URL ||
+      `https://${this.accountName}.blob.core.windows.net`;
+    const credential = new DefaultAzureCredential(
+      process.env.AZURE_CLIENT_ID
+        ? { managedIdentityClientId: process.env.AZURE_CLIENT_ID }
+        : undefined,
+    );
+
+    this.blobServiceClient = new BlobServiceClient(accountUrl, credential);
 
     this.logger.log(
-      `S3 Upload Service initialized for bucket: ${this.bucketName}`,
+      `Azure Blob Upload Service initialized for container: ${this.containerName}`,
     );
   }
 
   /**
-   * Faz upload de um arquivo para o S3
+   * Faz upload de um arquivo para o Blob Storage
    * @param file - Arquivo do multer
-   * @param folder - Pasta no S3 (ex: 'dishes', 'users', 'restaurants')
-   * @returns URL pública do arquivo ou chave do arquivo
+   * @param folder - Pasta lógica no Blob (ex: 'dishes', 'users', 'restaurants')
+   * @returns Chave do arquivo armazenado
    */
   async uploadFile(
     file: Express.Multer.File,
     folder: string,
-  ): Promise<{ url: string; key: string }> {
+  ): Promise<{ key: string }> {
     try {
-      // Gera um nome único para o arquivo
       const timestamp = Date.now();
       const randomString = Math.random().toString(36).substring(7);
       const fileExtension = file.originalname.split('.').pop();
@@ -52,72 +57,71 @@ export class S3UploadService {
 
       this.logger.log(`Uploading file: ${file.originalname} to ${key}`);
 
-      const command = new PutObjectCommand({
-        Bucket: this.bucketName,
-        Key: key,
-        Body: file.buffer,
-        ContentType: file.mimetype,
-        ACL: 'public-read', // Torna o arquivo público
+      const blobClient = this.getBlockBlobClient(key);
+      await blobClient.uploadData(file.buffer, {
+        blobHTTPHeaders: {
+          blobContentType: file.mimetype,
+        },
       });
 
-      await this.s3Client.send(command);
+      this.logger.log(`File uploaded successfully: ${key}`);
 
-      const url = `https://${this.bucketName}.s3.${this.region}.amazonaws.com/${key}`;
-
-      this.logger.log(`File uploaded successfully: ${url}`);
-
-      return { url, key };
+      return { key };
     } catch (error) {
-      this.logger.error(`Error uploading file: ${error.message}`, error.stack);
-      throw new Error(`Failed to upload file: ${error.message}`);
+      const errorMessage =
+        error instanceof Error ? error.message : 'erro desconhecido';
+      this.logger.error(`Error uploading file: ${errorMessage}`);
+      throw new Error(`Failed to upload file: ${errorMessage}`);
     }
   }
 
   /**
-   * Deleta um arquivo do S3
-   * @param key - Chave do arquivo no S3
+   * Deleta um arquivo do Blob Storage
+   * @param key - Chave do arquivo no Blob
    */
   async deleteFile(key: string): Promise<void> {
     try {
       this.logger.log(`Deleting file: ${key}`);
 
-      const command = new DeleteObjectCommand({
-        Bucket: this.bucketName,
-        Key: key,
-      });
-
-      await this.s3Client.send(command);
+      const blobClient = this.getBlockBlobClient(key);
+      await blobClient.deleteIfExists();
 
       this.logger.log(`File deleted successfully: ${key}`);
     } catch (error) {
-      this.logger.error(`Error deleting file: ${error.message}`, error.stack);
-      throw new Error(`Failed to delete file: ${error.message}`);
+      const errorMessage =
+        error instanceof Error ? error.message : 'erro desconhecido';
+      this.logger.error(`Error deleting file: ${errorMessage}`);
+      throw new Error(`Failed to delete file: ${errorMessage}`);
     }
   }
 
   /**
-   * Gera uma URL assinada temporária para acesso privado
-   * @param key - Chave do arquivo no S3
-   * @param expiresIn - Tempo de expiração em segundos (padrão: 1 hora)
+   * Faz download de um arquivo do Blob Storage para ser servido pela API
+   * @param key - Chave do arquivo no Blob
    */
-  async getSignedUrl(key: string, expiresIn: number = 3600): Promise<string> {
+  async downloadFile(key: string): Promise<{
+    stream: NonNullable<BlobDownloadResponseParsed['readableStreamBody']>;
+    contentType?: string;
+    contentLength?: number;
+  }> {
     try {
-      const command = new GetObjectCommand({
-        Bucket: this.bucketName,
-        Key: key,
-      });
+      const blobClient = this.getBlockBlobClient(key);
+      const response = await blobClient.download();
 
-      const signedUrl = await getSignedUrl(this.s3Client, command, {
-        expiresIn,
-      });
+      if (!response.readableStreamBody) {
+        throw new Error('Blob stream indisponível');
+      }
 
-      return signedUrl;
+      return {
+        stream: response.readableStreamBody,
+        contentType: response.contentType,
+        contentLength: response.contentLength,
+      };
     } catch (error) {
-      this.logger.error(
-        `Error generating signed URL: ${error.message}`,
-        error.stack,
-      );
-      throw new Error(`Failed to generate signed URL: ${error.message}`);
+      const errorMessage =
+        error instanceof Error ? error.message : 'erro desconhecido';
+      this.logger.error(`Error downloading file: ${errorMessage}`);
+      throw new Error(`Failed to download file: ${errorMessage}`);
     }
   }
 
@@ -141,5 +145,13 @@ export class S3UploadService {
   isValidFileSize(file: Express.Multer.File, maxSizeInMB: number = 5): boolean {
     const maxSizeInBytes = maxSizeInMB * 1024 * 1024;
     return file.size <= maxSizeInBytes;
+  }
+
+  private getContainerClient() {
+    return this.blobServiceClient.getContainerClient(this.containerName);
+  }
+
+  private getBlockBlobClient(key: string): BlockBlobClient {
+    return this.getContainerClient().getBlockBlobClient(key);
   }
 }

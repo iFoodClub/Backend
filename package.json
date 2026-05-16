@@ -24,6 +24,8 @@
     "prepare": "husky"
   },
   "dependencies": {
+    "@azure/identity": "^4.3.0",
+    "@azure/storage-blob": "^12.28.0",
     "@aws-sdk/client-cloudwatch": "^3.908.0",
     "@aws-sdk/client-cloudwatch-logs": "^3.908.0",
     "@aws-sdk/client-s3": "^3.908.0",
