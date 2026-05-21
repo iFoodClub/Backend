@@ -31,6 +31,25 @@ export class UserRepository {
     return await user.update(userData);
   }
 
+  async update(
+    id: number,
+    userData: Partial<Omit<UserEntityInterface, 'id'>>,
+  ): Promise<UserEntityInterface | null> {
+    const user = await this.userEntity.findByPk(id);
+    if (!user) {
+      return null;
+    }
+    return await user.update(userData);
+  }
+
+  async findByEmailChangeToken(
+    token: string,
+  ): Promise<UserEntityInterface | null> {
+    return await this.userEntity.findOne({
+      where: { emailChangeToken: token },
+    });
+  }
+
   async getById(id: number): Promise<UserEntityInterface | null> {
     return await this.userEntity.findByPk(id);
   }

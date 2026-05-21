@@ -17,6 +17,9 @@ describe('RestaurantController', () => {
   let updateIndividualOrderStatus: any;
   let updateCompanyOrderStatus: any;
   let getOrderProgress: any;
+  let updateRestaurantProfile: any;
+  let requestRestaurantEmailChange: any;
+  let confirmRestaurantEmailChange: any;
 
   beforeEach(() => {
     listRestaurant = { execute: jest.fn() };
@@ -30,6 +33,9 @@ describe('RestaurantController', () => {
     updateIndividualOrderStatus = { execute: jest.fn() };
     updateCompanyOrderStatus = { execute: jest.fn() };
     getOrderProgress = { execute: jest.fn() };
+    updateRestaurantProfile = { execute: jest.fn() };
+    requestRestaurantEmailChange = { execute: jest.fn() };
+    confirmRestaurantEmailChange = { execute: jest.fn() };
 
     controller = new RestaurantController(
       listRestaurant,
@@ -43,6 +49,9 @@ describe('RestaurantController', () => {
       updateIndividualOrderStatus,
       updateCompanyOrderStatus,
       getOrderProgress,
+      updateRestaurantProfile,
+      requestRestaurantEmailChange,
+      confirmRestaurantEmailChange,
     );
   });
 

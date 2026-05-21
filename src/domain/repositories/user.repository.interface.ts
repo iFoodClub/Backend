@@ -1,6 +1,6 @@
-import { CompanyEntityInterface } from "./company.repository.interface";
-import { EmployeeEntityInterface } from "./employee.repository.interface";
-import { RestaurantEntityInterface } from "./restaurant.repository.interface";
+import { CompanyEntityInterface } from './company.repository.interface';
+import { EmployeeEntityInterface } from './employee.repository.interface';
+import { RestaurantEntityInterface } from './restaurant.repository.interface';
 
 export enum UserType {
   COMPANY = 'company',
@@ -15,6 +15,9 @@ export interface UserEntityInterface {
   userType: UserType;
   verificationToken?: string;
   verificationTokenExpireAt?: Date;
+  pendingEmail?: string;
+  emailChangeToken?: string;
+  emailChangeTokenExpiresAt?: Date;
   cpf?: string;
   cnpj?: string;
   profileImage?: string;
