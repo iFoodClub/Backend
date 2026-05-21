@@ -17,6 +17,8 @@ describe('RestaurantController', () => {
   let updateIndividualOrderStatus: any;
   let updateCompanyOrderStatus: any;
   let getOrderProgress: any;
+  let listFavorites: any;
+  let toggleFavorite: any;
 
   beforeEach(() => {
     listRestaurant = { execute: jest.fn() };
@@ -30,6 +32,8 @@ describe('RestaurantController', () => {
     updateIndividualOrderStatus = { execute: jest.fn() };
     updateCompanyOrderStatus = { execute: jest.fn() };
     getOrderProgress = { execute: jest.fn() };
+    listFavorites = { execute: jest.fn() };
+    toggleFavorite = { execute: jest.fn() };
 
     controller = new RestaurantController(
       listRestaurant,
@@ -43,6 +47,8 @@ describe('RestaurantController', () => {
       updateIndividualOrderStatus,
       updateCompanyOrderStatus,
       getOrderProgress,
+      listFavorites,
+      toggleFavorite,
     );
   });
 
