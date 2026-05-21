@@ -32,6 +32,11 @@ import { UploadOwnershipGuard } from 'src/infrastructure/guards/upload-ownership
 import { RestaurantRepository } from 'src/infrastructure/database/repositories/restaurant.repository';
 import { restaurantProvider } from 'src/infrastructure/providers/restaurant.provider';
 import { UserProfileEligibilityService } from 'src/application/use-cases/user-profile-eligibility.service';
+import { companyOrderScheduleProvider } from 'src/infrastructure/providers/company-order-schedule.provider';
+import { CompanyOrderScheduleRepository } from 'src/infrastructure/database/repositories/company-order-schedule.repository';
+import { SetCompanyOrderScheduleUseCase } from 'src/application/use-cases/set-company-order-schedule.use-case';
+import { GetCompanyOrderScheduleUseCase } from 'src/application/use-cases/get-company-order-schedule.use-case';
+import { ValidateTriggerTimeWithinOperatingHoursUseCase } from 'src/application/use-cases/validate-trigger-time-within-operating-hours.use-case';
 
 @Module({
   imports: [DatabaseModule, AuthModule],
@@ -46,6 +51,7 @@ import { UserProfileEligibilityService } from 'src/application/use-cases/user-pr
     ...dishProvider,
     ...companyOrderProvider,
     ...restaurantProvider,
+    ...companyOrderScheduleProvider,
     CompanyRepository,
     UserRepository,
     EmployeeRepository,
@@ -55,6 +61,7 @@ import { UserProfileEligibilityService } from 'src/application/use-cases/user-pr
     DishRepository,
     CompanyOrderRepository,
     RestaurantRepository,
+    CompanyOrderScheduleRepository,
     UploadOwnershipGuard,
     ListCompaniesService,
     GetCompanyByIdService,
@@ -67,6 +74,9 @@ import { UserProfileEligibilityService } from 'src/application/use-cases/user-pr
     ListWeeklyOrdersByCompanyService,
     CreateOrdersFromWeeklyOrdersUseCase,
     UserProfileEligibilityService,
+    ValidateTriggerTimeWithinOperatingHoursUseCase,
+    SetCompanyOrderScheduleUseCase,
+    GetCompanyOrderScheduleUseCase,
   ],
   exports: [
     ListCompaniesService,
@@ -79,6 +89,9 @@ import { UserProfileEligibilityService } from 'src/application/use-cases/user-pr
     CreateCompanyOrderUseCase,
     ListWeeklyOrdersByCompanyService,
     CreateOrdersFromWeeklyOrdersUseCase,
+    ValidateTriggerTimeWithinOperatingHoursUseCase,
+    SetCompanyOrderScheduleUseCase,
+    GetCompanyOrderScheduleUseCase,
   ],
 })
 export class CompanyModule {}
