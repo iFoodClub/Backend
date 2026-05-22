@@ -85,6 +85,12 @@ export class RestaurantEntity extends Model {
   image: string;
 
   @Column({
+    type: DataType.STRING(20),
+    allowNull: true,
+  })
+  phone: string;
+
+  @Column({
     type: DataType.STRING(5),
     allowNull: true,
   })

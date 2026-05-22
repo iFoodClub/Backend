@@ -14,6 +14,8 @@ export interface RestaurantInterface {
   number: string;
   complemento?: string;
   profileImage?: string;
+  phone?: string;
+  email?: string;
   openingTime?: string;
   closingTime?: string;
   averageRating?: number;

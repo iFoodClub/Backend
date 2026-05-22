@@ -14,6 +14,7 @@ export interface RestaurantEntityInterface {
   number: string;
   complemento?: string;
   image?: string;
+  phone?: string;
   openingTime?: string;
   closingTime?: string;
   dishes?: DishEntityInterface[];
