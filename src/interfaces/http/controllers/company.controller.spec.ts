@@ -14,6 +14,8 @@ describe('CompanyController', () => {
   let createCompanyOrder: any;
   let listWeeklyOrdersByCompany: any;
   let createOrdersFromWeekly: any;
+  let setCompanyOrderSchedule: any;
+  let getCompanyOrderSchedule: any;
 
   beforeEach(() => {
     listCompanies = { execute: jest.fn() };
@@ -26,6 +28,8 @@ describe('CompanyController', () => {
     createCompanyOrder = { execute: jest.fn() };
     listWeeklyOrdersByCompany = { executeGroupedByRestaurant: jest.fn() };
     createOrdersFromWeekly = { execute: jest.fn() };
+    setCompanyOrderSchedule = { execute: jest.fn() };
+    getCompanyOrderSchedule = { execute: jest.fn() };
 
     controller = new CompanyController(
       listCompanies,
@@ -38,6 +42,8 @@ describe('CompanyController', () => {
       createCompanyOrder,
       listWeeklyOrdersByCompany,
       createOrdersFromWeekly,
+      setCompanyOrderSchedule,
+      getCompanyOrderSchedule,
     );
   });
 
@@ -265,7 +271,9 @@ describe('CompanyController', () => {
     it('retorna 200 quando empresa existe', async () => {
       const res = mockResponse();
       getCompanyById.execute.mockResolvedValue({ id: 1 });
-      listWeeklyOrdersByCompany.executeGroupedByRestaurant.mockResolvedValue([]);
+      listWeeklyOrdersByCompany.executeGroupedByRestaurant.mockResolvedValue(
+        [],
+      );
       await controller.getWeeklyOrdersByCompany('1', res);
       expect(res.status).toHaveBeenCalledWith(200);
     });

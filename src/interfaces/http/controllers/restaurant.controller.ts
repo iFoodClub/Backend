@@ -189,8 +189,11 @@ export class RestaurantController {
       'name',
       'cnpj',
       'cep',
+      'rua',
       'number',
       'profileImage',
+      'openingTime',
+      'closingTime',
     ];
     const receivedFields = Object.keys(restaurantData);
     const invalidFields = receivedFields.filter(
