@@ -11,12 +11,14 @@ import { IndividualOrderRepository } from '../../infrastructure/database/reposit
 import { CompanyOrderRepository } from '../../infrastructure/database/repositories/company-order.repository';
 import { OrderItemRepository } from '../../infrastructure/database/repositories/order-item.repository';
 import { DishRepository } from '../../infrastructure/database/repositories/dish.repository';
+import { RestaurantRepository } from '../../infrastructure/database/repositories/restaurant.repository';
 import {
   IndividualOrderStatus,
   IndividualOrderEntityInterface,
 } from '../../domain/repositories/individual-order.repository.interface';
 import { CompanyOrderStatus } from '../../domain/repositories/company-order.repository.interface';
 import { DayOfWeek } from '../../domain/repositories/employee-weekly-orders.repository.interface';
+import { ValidateTriggerTimeWithinOperatingHoursUseCase } from './validate-trigger-time-within-operating-hours.use-case';
 
 @Injectable()
 export class CreateOrdersFromWeeklyOrdersUseCase {
@@ -35,6 +37,9 @@ export class CreateOrdersFromWeeklyOrdersUseCase {
     private readonly orderItemRepository: OrderItemRepository,
     @Inject('DISH_REPOSITORY')
     private readonly dishRepository: DishRepository,
+    @Inject('RESTAURANT_REPOSITORY')
+    private readonly restaurantRepository: RestaurantRepository,
+    private readonly validateTriggerTime: ValidateTriggerTimeWithinOperatingHoursUseCase,
   ) {}
 
   private getCurrentDayOfWeek(): DayOfWeek {
@@ -49,6 +54,13 @@ export class CreateOrdersFromWeeklyOrdersUseCase {
     ];
     const today = new Date().getDay();
     return days[today] as DayOfWeek;
+  }
+
+  private getCurrentTimeHHmm(): string {
+    const now = new Date();
+    const hh = String(now.getHours()).padStart(2, '0');
+    const mm = String(now.getMinutes()).padStart(2, '0');
+    return `${hh}:${mm}`;
   }
 
   async execute(companyId: number): Promise<{
@@ -135,10 +147,24 @@ export class CreateOrdersFromWeeklyOrdersUseCase {
       );
     }
 
+    const finalRestaurantId = restaurantId ?? company.restaurantId;
+
+    // US42: bloquear disparo de pedido fora do horário de funcionamento do restaurante
+    const restaurant =
+      await this.restaurantRepository.getById(finalRestaurantId);
+    if (restaurant && restaurant.openingTime && restaurant.closingTime) {
+      this.validateTriggerTime.execute({
+        triggerTime: this.getCurrentTimeHHmm(),
+        openingTime: restaurant.openingTime,
+        closingTime: restaurant.closingTime,
+        restaurantName: restaurant.name,
+      });
+    }
+
     // Criar pedido da empresa
     const companyOrder = await this.companyOrderRepository.create({
       companyId: companyId,
-      restaurantId: restaurantId || company.restaurantId,
+      restaurantId: finalRestaurantId,
       status: CompanyOrderStatus.PENDING,
     });
 

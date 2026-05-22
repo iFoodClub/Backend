@@ -90,6 +90,18 @@ export class RestaurantEntity extends Model {
   })
   phone: string;
 
+  @Column({
+    type: DataType.STRING(5),
+    allowNull: true,
+  })
+  openingTime: string;
+
+  @Column({
+    type: DataType.STRING(5),
+    allowNull: true,
+  })
+  closingTime: string;
+
   @BelongsTo(() => UserEntity)
   user: UserEntity;
 

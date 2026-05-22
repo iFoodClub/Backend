@@ -18,37 +18,47 @@ export class GetRestaurantByIdService {
     @Inject('EMPLOYEE_REPOSITORY')
     private readonly employeeRepository: EmployeeRepository,
     @Inject('USER_REPOSITORY')
-    private readonly userRepository: UserRepository
-  ){}
+    private readonly userRepository: UserRepository,
+  ) {}
   async execute(id: number): Promise<RestaurantInterface | null> {
     const restaurant = await this.restaurantRepository.getById(id);
     if (!restaurant) {
       return null;
     }
-    const dishes = await this.dishRepository.listByRestaurant(id)
-    const restaurantRatings = await this.restaurantRatingRepository.listByRestaurant(id).then(ratings => {
-      return ratings.map(rating => ({
-        id: rating.id,
-        restaurantId: rating.restaurantId,
-        userId: rating.userId,
-        rating: rating.rating,
-        description: rating.description
-      }))
-    })
-    const restaurantRatingsWithEmployeeName = await Promise.all(restaurantRatings.map(async (rating: RestaurantRatingInterface) => {
-      const employee = await this.employeeRepository.getByUserId(rating.userId)
-      return {
-        id: rating.id,
-        restaurantId: rating.restaurantId,
-        userId: rating.userId,
-        employeeName: employee.name,
-        rating: rating.rating,
-        description: rating.description,
-      }
-    }))
-    
-    const averageRating = restaurantRatings.length > 0 ? restaurantRatings.reduce((sum, rating) => sum + rating.rating, 0) / restaurantRatings.length : 0
-    const user = await this.userRepository.getById(restaurant.userId)
+    const dishes = await this.dishRepository.listByRestaurant(id);
+    const restaurantRatings = await this.restaurantRatingRepository
+      .listByRestaurant(id)
+      .then((ratings) => {
+        return ratings.map((rating) => ({
+          id: rating.id,
+          restaurantId: rating.restaurantId,
+          userId: rating.userId,
+          rating: rating.rating,
+          description: rating.description,
+        }));
+      });
+    const restaurantRatingsWithEmployeeName = await Promise.all(
+      restaurantRatings.map(async (rating: RestaurantRatingInterface) => {
+        const employee = await this.employeeRepository.getByUserId(
+          rating.userId,
+        );
+        return {
+          id: rating.id,
+          restaurantId: rating.restaurantId,
+          userId: rating.userId,
+          employeeName: employee.name,
+          rating: rating.rating,
+          description: rating.description,
+        };
+      }),
+    );
+
+    const averageRating =
+      restaurantRatings.length > 0
+        ? restaurantRatings.reduce((sum, rating) => sum + rating.rating, 0) /
+          restaurantRatings.length
+        : 0;
+    const user = await this.userRepository.getById(restaurant.userId);
     const restaurantWithDishes = {
       id: restaurant.id,
       userId: restaurant.userId,
@@ -61,10 +71,12 @@ export class GetRestaurantByIdService {
       estado: restaurant.estado,
       complemento: restaurant.complemento,
       profileImage: user.profileImage,
+      openingTime: restaurant.openingTime,
+      closingTime: restaurant.closingTime,
       dishes: dishes,
       restaurantRatings: restaurantRatingsWithEmployeeName,
-      averageRating: averageRating
-    }
+      averageRating: averageRating,
+    };
     return restaurantWithDishes;
   }
 }
