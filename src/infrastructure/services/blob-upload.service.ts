@@ -57,7 +57,11 @@ export class AzureBlobUploadService {
 
       this.logger.log(`Uploading file: ${file.originalname} to ${key}`);
 
-      const blobClient = this.getBlockBlobClient(key);
+      // Escolhe container: se existir um container com o mesmo nome da pasta, usa ele;
+      // caso contrário, usa o container padrão e grava em uma 'pasta' lógica.
+      const containerClient = await this.getContainerClientFor(folder);
+      const blobClient = containerClient.getBlockBlobClient(key);
+
       await blobClient.uploadData(file.buffer, {
         blobHTTPHeaders: {
           blobContentType: file.mimetype,
@@ -83,7 +87,11 @@ export class AzureBlobUploadService {
     try {
       this.logger.log(`Deleting file: ${key}`);
 
-      const blobClient = this.getBlockBlobClient(key);
+      const { containerClient, blobName } = await this.getContainerAndBlobFromKey(
+        key,
+      );
+
+      const blobClient = containerClient.getBlockBlobClient(blobName);
       await blobClient.deleteIfExists();
 
       this.logger.log(`File deleted successfully: ${key}`);
@@ -105,7 +113,11 @@ export class AzureBlobUploadService {
     contentLength?: number;
   }> {
     try {
-      const blobClient = this.getBlockBlobClient(key);
+      const { containerClient, blobName } = await this.getContainerAndBlobFromKey(
+        key,
+      );
+
+      const blobClient = containerClient.getBlockBlobClient(blobName);
       const response = await blobClient.download();
 
       if (!response.readableStreamBody) {
@@ -151,7 +163,34 @@ export class AzureBlobUploadService {
     return this.blobServiceClient.getContainerClient(this.containerName);
   }
 
-  private getBlockBlobClient(key: string): BlockBlobClient {
-    return this.getContainerClient().getBlockBlobClient(key);
+  private async getContainerClientFor(folder: string) {
+    const candidate = this.blobServiceClient.getContainerClient(folder);
+    try {
+      const exists = await candidate.exists();
+      if (exists) return candidate;
+    } catch (err) {
+      // ignora e usa o container padrão
+    }
+
+    return this.getContainerClient();
+  }
+
+  private async getContainerAndBlobFromKey(key: string) {
+    // Se a chave começar com 'containerName/...' e esse container existir,
+    // separamos container e blobName. Caso contrário, usamos o container padrão.
+    const parts = key.split('/');
+    if (parts.length > 1) {
+      const possibleContainer = parts[0];
+      const candidate = this.blobServiceClient.getContainerClient(possibleContainer);
+      try {
+        if (await candidate.exists()) {
+          return { containerClient: candidate, blobName: parts.slice(1).join('/') };
+        }
+      } catch (err) {
+        // ignore
+      }
+    }
+
+    return { containerClient: this.getContainerClient(), blobName: key };
   }
 }
