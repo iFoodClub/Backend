@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-argument */
 import { ForbiddenException, NotFoundException } from '@nestjs/common';
 import { UploadOwnershipGuard } from './upload-ownership.guard';
 import { mockExecutionContext } from '../../../test/helpers/http-mocks';
