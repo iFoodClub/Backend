@@ -12,7 +12,7 @@ export class UploadImageRequestDto {
 
 export class DeleteImageRequestDto {
   @ApiProperty({
-    example: 'dishes/1697123456789-abc123.jpg',
+    example: 'pratos/1697123456789-abc123.jpg',
     description: 'Chave do arquivo no Blob Storage que será deletado',
   })
   key: string;

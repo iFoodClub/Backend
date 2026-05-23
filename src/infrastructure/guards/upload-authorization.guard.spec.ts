@@ -36,53 +36,84 @@ describe('UploadAuthorizationGuard', () => {
     expect(guard.canActivate(ctx)).toBe(true);
   });
 
-  it('COMPANY pode acessar folder companies', () => {
-    const ctx = makeCtx({ id: 1, userType: UserType.COMPANY }, '/company/1');
-    expect(guard.canActivate(ctx)).toBe(true);
-  });
-
-  it('COMPANY pode acessar folder users (funcionários)', () => {
-    const ctx = makeCtx({ id: 1, userType: UserType.COMPANY }, '/employee/1');
-    expect(guard.canActivate(ctx)).toBe(true);
-  });
-
-  it('COMPANY não pode acessar dishes', () => {
-    const ctx = makeCtx({ id: 1, userType: UserType.COMPANY }, '/Dish/1');
-    expect(() => guard.canActivate(ctx)).toThrow(ForbiddenException);
-  });
-
-  it('RESTAURANT pode acessar restaurants', () => {
+  it('COMPANY pode acessar folder perfis', () => {
     const ctx = makeCtx(
-      { id: 1, userType: UserType.RESTAURANT },
-      '/restaurant/1',
+      { id: 1, userType: UserType.COMPANY },
+      '/upload/image/perfis',
+      { folder: 'perfis' },
     );
     expect(guard.canActivate(ctx)).toBe(true);
   });
 
-  it('RESTAURANT pode acessar dishes (case-insensitive)', () => {
-    const ctx = makeCtx({ id: 1, userType: UserType.RESTAURANT }, '/Dish/1');
+  it('COMPANY pode acessar folder funcionarios', () => {
+    const ctx = makeCtx(
+      { id: 1, userType: UserType.COMPANY },
+      '/upload/image/funcionarios',
+      { folder: 'funcionarios' },
+    );
     expect(guard.canActivate(ctx)).toBe(true);
   });
 
-  it('RESTAURANT não pode acessar companies', () => {
-    const ctx = makeCtx({ id: 1, userType: UserType.RESTAURANT }, '/company/1');
+  it('COMPANY não pode acessar pratos', () => {
+    const ctx = makeCtx(
+      { id: 1, userType: UserType.COMPANY },
+      '/upload/image/pratos',
+      { folder: 'pratos' },
+    );
     expect(() => guard.canActivate(ctx)).toThrow(ForbiddenException);
   });
 
-  it('EMPLOYEE pode acessar users', () => {
-    const ctx = makeCtx({ id: 1, userType: UserType.EMPLOYEE }, '/employee/1');
+  it('RESTAURANT pode acessar perfis', () => {
+    const ctx = makeCtx(
+      { id: 1, userType: UserType.RESTAURANT },
+      '/upload/image/perfis',
+      { folder: 'perfis' },
+    );
     expect(guard.canActivate(ctx)).toBe(true);
   });
 
-  it('EMPLOYEE não pode acessar companies', () => {
-    const ctx = makeCtx({ id: 1, userType: UserType.EMPLOYEE }, '/company/1');
+  it('RESTAURANT pode acessar pratos', () => {
+    const ctx = makeCtx(
+      { id: 1, userType: UserType.RESTAURANT },
+      '/upload/image/pratos',
+      { folder: 'pratos' },
+    );
+    expect(guard.canActivate(ctx)).toBe(true);
+  });
+
+  it('RESTAURANT não pode acessar funcionarios', () => {
+    const ctx = makeCtx(
+      { id: 1, userType: UserType.RESTAURANT },
+      '/upload/image/funcionarios',
+      { folder: 'funcionarios' },
+    );
+    expect(() => guard.canActivate(ctx)).toThrow(ForbiddenException);
+  });
+
+  it('EMPLOYEE pode acessar funcionarios', () => {
+    const ctx = makeCtx(
+      { id: 1, userType: UserType.EMPLOYEE },
+      '/upload/image/funcionarios',
+      { folder: 'funcionarios' },
+    );
+    expect(guard.canActivate(ctx)).toBe(true);
+  });
+
+  it('EMPLOYEE não pode acessar pratos', () => {
+    const ctx = makeCtx(
+      { id: 1, userType: UserType.EMPLOYEE },
+      '/upload/image/pratos',
+      { folder: 'pratos' },
+    );
     expect(() => guard.canActivate(ctx)).toThrow(ForbiddenException);
   });
 
   it('usa folder do params quando presente, ignorando URL', () => {
-    const ctx = makeCtx({ id: 1, userType: UserType.COMPANY }, '/something', {
-      folder: 'companies',
-    });
+    const ctx = makeCtx(
+      { id: 1, userType: UserType.COMPANY },
+      '/something',
+      { folder: 'perfis' },
+    );
     expect(guard.canActivate(ctx)).toBe(true);
   });
 

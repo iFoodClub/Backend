@@ -31,7 +31,7 @@ import {
 } from '@nestjs/swagger';
 import { Request, Response } from 'express';
 import { Readable } from 'stream';
-import { AzureBlobUploadService } from '../../../infrastructure/services/s3-upload.service';
+import { AzureBlobUploadService } from '../../../infrastructure/services/blob-upload.service';
 import {
   UploadImageRequestDto,
   DeleteImageRequestDto,
@@ -55,7 +55,7 @@ import { UploadOwnershipGuard } from 'src/infrastructure/guards/upload-ownership
 export class UploadController {
   constructor(
     private readonly azureBlobUploadService: AzureBlobUploadService,
-  ) {}
+  ) { }
 
   private buildPublicImageUrl(request: Request, key: string): string {
     const forwardedProto = request.get('x-forwarded-proto');
@@ -75,7 +75,7 @@ export class UploadController {
     name: 'key',
     required: true,
     description: 'Chave do arquivo no Blob Storage',
-    example: 'dishes/1697123456789-abc123.jpg',
+    example: 'pratos/1697123456789-abc123.jpg',
   })
   @ApiResponse({
     status: 200,
@@ -120,13 +120,12 @@ export class UploadController {
     summary: 'Upload de imagem para o Azure Blob Storage',
     description: `
       Faz upload de uma imagem para o Azure Blob Storage.
-      
-      **Pastas disponíveis:**
-      - \`dishes\` - Fotos de pratos dos restaurantes
-      - \`users\` - Fotos de perfil de usuários/funcionários
-      - \`restaurants\` - Fotos de perfil dos restaurantes
-      - \`companies\` - Logos das empresas
-      
+
+      **Containers disponíveis:**
+      - \`pratos\` - Fotos de pratos dos restaurantes
+      - \`perfis\` - Fotos de perfil de restaurantes e empresas
+      - \`funcionarios\` - Fotos de funcionários
+
       **Tipos aceitos:** JPEG, PNG, GIF, WebP
       **Tamanho máximo:** 5MB
     `,
@@ -135,13 +134,13 @@ export class UploadController {
   @ApiParam({
     name: 'folder',
     description: 'Pasta lógica de destino no Blob Storage',
-    example: 'dishes',
-    enum: ['dishes', 'users', 'restaurants', 'companies'],
+    example: 'pratos',
+    enum: ['pratos', 'perfis', 'funcionarios'],
     required: true,
     schema: {
       type: 'string',
-      enum: ['dishes', 'users', 'restaurants', 'companies'],
-      default: 'dishes',
+      enum: ['pratos', 'perfis', 'funcionarios'],
+      default: 'pratos',
     },
   })
   @ApiBody({
@@ -162,16 +161,27 @@ export class UploadController {
   })
   @ApiResponse({
     status: 201,
-    description: '✅ Imagem enviada com sucesso',
+    description: 'Imagem enviada com sucesso',
     type: UploadImageResponseDto,
     schema: {
       example: {
         success: true,
         message: 'Imagem enviada com sucesso',
         data: {
-          url: 'http://localhost:3000/upload/image?key=dishes%2F1697123456789-abc123.jpg',
-          key: 'dishes/1697123456789-abc123.jpg',
+          url: 'http://localhost:3000/upload/image?key=pratos%2F1697123456789-abc123.jpg',
+          key: 'pratos/1697123456789-abc123.jpg',
         },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 400,
+    description: '❌ Erro ao fazer upload',
+    schema: {
+      example: {
+        statusCode: 400,
+        message: 'Erro ao fazer upload: ...',
+        error: 'Bad Request',
       },
     },
   })
@@ -216,7 +226,7 @@ export class UploadController {
       throw new BadRequestException('O arquivo deve ter no máximo 5MB');
     }
 
-    const allowedFolders = ['dishes', 'users', 'restaurants', 'companies'];
+    const allowedFolders = ['pratos', 'perfis', 'funcionarios'];
     if (!allowedFolders.includes(folder)) {
       throw new BadRequestException(
         `Pasta inválida. Use uma das seguintes: ${allowedFolders.join(', ')}`,
@@ -250,7 +260,7 @@ export class UploadController {
     summary: 'Deletar imagem do Azure Blob Storage',
     description: `
       Remove permanentemente uma imagem do Azure Blob Storage.
-      
+
       **⚠️ ATENÇÃO:** Esta ação não pode ser desfeita!
     `,
   })
@@ -271,13 +281,13 @@ export class UploadController {
     schema: {
       example: {
         success: true,
-        message: { type: 'string', example: 'Imagem deletada com sucesso' },
+        message: 'Imagem deletada com sucesso',
+        data: {
+          url: 'http://localhost:3000/upload/image?key=pratos%2F1697123456789-abc123.jpg',
+          key: 'pratos/1697123456789-abc123.jpg',
+        },
       },
     },
-  })
-  @ApiResponse({
-    status: 400,
-    description: '❌ Erro ao deletar imagem',
   })
   async deleteImage(@Body() body: { key: string }) {
     if (!body.key) {

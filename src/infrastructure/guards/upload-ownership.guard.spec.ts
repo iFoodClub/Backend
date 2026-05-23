@@ -9,6 +9,7 @@ describe('UploadOwnershipGuard', () => {
   let employeeRepo: any;
   let restaurantRepo: any;
   let dishRepo: any;
+  let userRepo: any;
   let guard: UploadOwnershipGuard;
 
   beforeEach(() => {
@@ -20,11 +21,13 @@ describe('UploadOwnershipGuard', () => {
     };
     restaurantRepo = { getById: jest.fn() };
     dishRepo = { getById: jest.fn(), listByRestaurant: jest.fn() };
+    userRepo = { getById: jest.fn() };
     guard = new UploadOwnershipGuard(
       companyRepo,
       employeeRepo,
       restaurantRepo,
       dishRepo,
+      userRepo,
     );
   });
 
@@ -201,11 +204,11 @@ describe('UploadOwnershipGuard', () => {
     it('COMPANY deletando logo da própria empresa', async () => {
       companyRepo.getById.mockResolvedValue({
         id: 10,
-        profileImage: 'https://s3/companies/10.jpg',
+        profileImage: 'https://s3/perfis/10.jpg',
       });
       const ctx = makeCtx(
         { id: 1, userType: UserType.COMPANY, companyId: 10 },
-        { method: 'DELETE', body: { key: 'companies/10.jpg' } },
+        { method: 'DELETE', body: { key: 'perfis/10.jpg' } },
       );
       await expect(guard.canActivate(ctx)).resolves.toBe(true);
     });
@@ -213,11 +216,11 @@ describe('UploadOwnershipGuard', () => {
     it('COMPANY bloqueada ao deletar imagem que não é sua', async () => {
       companyRepo.getById.mockResolvedValue({
         id: 10,
-        profileImage: 'https://s3/companies/10.jpg',
+        profileImage: 'https://s3/perfis/10.jpg',
       });
       const ctx = makeCtx(
         { id: 1, userType: UserType.COMPANY, companyId: 10 },
-        { method: 'DELETE', body: { key: 'companies/99.jpg' } },
+        { method: 'DELETE', body: { key: 'perfis/99.jpg' } },
       );
       await expect(guard.canActivate(ctx)).rejects.toBeInstanceOf(
         ForbiddenException,
@@ -226,19 +229,45 @@ describe('UploadOwnershipGuard', () => {
 
     it('RESTAURANT deletando prato próprio via key', async () => {
       dishRepo.listByRestaurant.mockResolvedValue([
-        { id: 5, image: 'https://s3/dishes/5.jpg' },
+        { id: 5, image: 'https://s3/pratos/5.jpg' },
       ]);
       const ctx = makeCtx(
         { id: 1, userType: UserType.RESTAURANT, restaurantId: 10 },
-        { method: 'DELETE', body: { key: 'dishes/5.jpg' } },
+        { method: 'DELETE', body: { key: 'pratos/5.jpg' } },
       );
       await expect(guard.canActivate(ctx)).resolves.toBe(true);
+    });
+
+    it('EMPLOYEE deletando própria imagem em funcionarios', async () => {
+      userRepo.getById.mockResolvedValue({
+        id: 7,
+        profileImage: 'https://s3/funcionarios/7.jpg',
+      });
+      const ctx = makeCtx(
+        { id: 1, userType: UserType.EMPLOYEE, employeeId: 7 },
+        { method: 'DELETE', body: { key: 'funcionarios/7.jpg' } },
+      );
+      await expect(guard.canActivate(ctx)).resolves.toBe(true);
+    });
+
+    it('EMPLOYEE bloqueado ao deletar imagem de outra pessoa', async () => {
+      userRepo.getById.mockResolvedValue({
+        id: 7,
+        profileImage: 'https://s3/funcionarios/7.jpg',
+      });
+      const ctx = makeCtx(
+        { id: 1, userType: UserType.EMPLOYEE, employeeId: 7 },
+        { method: 'DELETE', body: { key: 'funcionarios/99.jpg' } },
+      );
+      await expect(guard.canActivate(ctx)).rejects.toBeInstanceOf(
+        ForbiddenException,
+      );
     });
 
     it('folder não suportado para o userType lança Forbidden', async () => {
       const ctx = makeCtx(
         { id: 1, userType: UserType.EMPLOYEE, employeeId: 7 },
-        { method: 'DELETE', body: { key: 'companies/10.jpg' } },
+        { method: 'DELETE', body: { key: 'pratos/10.jpg' } },
       );
       await expect(guard.canActivate(ctx)).rejects.toBeInstanceOf(
         ForbiddenException,
