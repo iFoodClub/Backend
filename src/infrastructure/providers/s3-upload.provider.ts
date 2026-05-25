@@ -1,8 +1,8 @@
-import { S3UploadService } from '../services/s3-upload.service';
+import { AzureBlobUploadService } from '../services/blob-upload.service';
 
-export const s3UploadProvider = [
+export const azureBlobUploadProvider = [
   {
-    provide: 'S3_UPLOAD_SERVICE',
-    useClass: S3UploadService,
+    provide: 'AZURE_BLOB_UPLOAD_SERVICE',
+    useClass: AzureBlobUploadService,
   },
 ];
