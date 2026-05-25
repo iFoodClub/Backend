@@ -1,10 +1,2 @@
 #!/usr/bin/env sh
-# Local hook: strip Cursor co-author trailer that gets auto-injected by the IDE.
-msg_file="$1"
-[ -z "$msg_file" ] && exit 0
-[ ! -f "$msg_file" ] && exit 0
-
-tmp=$(mktemp 2>/dev/null || echo "${msg_file}.tmp")
-grep -v -i 'Co-authored-by:[[:space:]]*Cursor[[:space:]]*<cursoragent@cursor\.com>' "$msg_file" > "$tmp"
-mv "$tmp" "$msg_file"
-exit 0
+. "$(dirname "$0")/h"

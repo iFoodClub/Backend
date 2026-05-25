@@ -3,7 +3,6 @@ import { DefaultAzureCredential } from '@azure/identity';
 import {
   BlobDownloadResponseParsed,
   BlobServiceClient,
-  BlockBlobClient,
 } from '@azure/storage-blob';
 
 @Injectable()
@@ -41,7 +40,7 @@ export class AzureBlobUploadService {
   /**
    * Faz upload de um arquivo para o Blob Storage
    * @param file - Arquivo do multer
-   * @param folder - Pasta lógica no Blob (ex: 'dishes', 'users', 'restaurants')
+   * @param folder - Pasta lógica no Blob (ex: 'pratos', 'perfis', 'funcionarios')
    * @returns Chave do arquivo armazenado
    */
   async uploadFile(
@@ -53,14 +52,14 @@ export class AzureBlobUploadService {
       const randomString = Math.random().toString(36).substring(7);
       const fileExtension = file.originalname.split('.').pop();
       const fileName = `${timestamp}-${randomString}.${fileExtension}`;
-      const key = `${folder}/${fileName}`;
+      const { containerClient, blobName, key } =
+        await this.resolveUploadTarget(folder, fileName);
 
       this.logger.log(`Uploading file: ${file.originalname} to ${key}`);
 
-      // Escolhe container: se existir um container com o mesmo nome da pasta, usa ele;
-      // caso contrário, usa o container padrão e grava em uma 'pasta' lógica.
-      const containerClient = await this.getContainerClientFor(folder);
-      const blobClient = containerClient.getBlockBlobClient(key);
+      // Se existir um container com o mesmo nome da pasta, salva no root do container.
+      // Caso contrário, usa o container padrão e grava em uma 'pasta' lógica.
+      const blobClient = containerClient.getBlockBlobClient(blobName);
 
       await blobClient.uploadData(file.buffer, {
         blobHTTPHeaders: {
@@ -92,7 +91,12 @@ export class AzureBlobUploadService {
       );
 
       const blobClient = containerClient.getBlockBlobClient(blobName);
-      await blobClient.deleteIfExists();
+      const deleteResponse = await blobClient.deleteIfExists();
+
+      if (!deleteResponse.succeeded && blobName !== key) {
+        const legacyBlobClient = containerClient.getBlockBlobClient(key);
+        await legacyBlobClient.deleteIfExists();
+      }
 
       this.logger.log(`File deleted successfully: ${key}`);
     } catch (error) {
@@ -168,11 +172,26 @@ export class AzureBlobUploadService {
     try {
       const exists = await candidate.exists();
       if (exists) return candidate;
-    } catch (err) {
+    } catch (_err) {
       // ignora e usa o container padrão
     }
 
     return this.getContainerClient();
+  }
+
+  private async resolveUploadTarget(folder: string, fileName: string) {
+    const key = `${folder}/${fileName}`;
+    const candidate = this.blobServiceClient.getContainerClient(folder);
+
+    try {
+      if (await candidate.exists()) {
+        return { containerClient: candidate, blobName: fileName, key };
+      }
+    } catch (_err) {
+      // ignore e usa o container padrão
+    }
+
+    return { containerClient: this.getContainerClient(), blobName: key, key };
   }
 
   private async getContainerAndBlobFromKey(key: string) {
@@ -186,7 +205,7 @@ export class AzureBlobUploadService {
         if (await candidate.exists()) {
           return { containerClient: candidate, blobName: parts.slice(1).join('/') };
         }
-      } catch (err) {
+      } catch (_err) {
         // ignore
       }
     }
