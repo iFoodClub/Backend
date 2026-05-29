@@ -237,6 +237,7 @@ export class CompanyController {
       'number',
       'restaurantId',
       'profileImage',
+      'orderCutoffTime',
     ];
     const receivedFields = Object.keys(companyData);
     const invalidFields = receivedFields.filter(

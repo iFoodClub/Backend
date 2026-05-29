@@ -1,5 +1,5 @@
-import { CompanyAffiliateRestaurantEntityInterface } from "./company-affiliate-restaurant.repository.interface";
-import { EmployeeEntityInterface } from "./employee.repository.interface";
+import { CompanyAffiliateRestaurantEntityInterface } from './company-affiliate-restaurant.repository.interface';
+import { EmployeeEntityInterface } from './employee.repository.interface';
 
 export interface CompanyEntityInterface {
   id: number;
@@ -12,4 +12,5 @@ export interface CompanyEntityInterface {
   employees?: EmployeeEntityInterface[];
   affiliateRestaurants?: CompanyAffiliateRestaurantEntityInterface[];
   profileImage?: string;
+  orderCutoffTime?: string | null;
 }
