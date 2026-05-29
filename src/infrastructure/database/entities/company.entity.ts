@@ -1,4 +1,12 @@
-import { Table, Model, Column, DataType, BelongsTo, HasMany, ForeignKey } from 'sequelize-typescript';
+import {
+  Table,
+  Model,
+  Column,
+  DataType,
+  BelongsTo,
+  HasMany,
+  ForeignKey,
+} from 'sequelize-typescript';
 import { UserEntity } from './user.entity';
 import { EmployeeEntity } from './employee.entity';
 import { CompanyAffiliateRestaurantEntity } from './company-affiliate-restaurant.entity';
@@ -56,6 +64,13 @@ export class CompanyEntity extends Model {
 
   @BelongsTo(() => UserEntity)
   user: UserEntity;
+
+  @Column({
+    type: DataType.STRING(5),
+    allowNull: true,
+    field: 'orderCutoffTime',
+  })
+  orderCutoffTime: string;
 
   @HasMany(() => EmployeeEntity)
   employees: EmployeeEntity[];

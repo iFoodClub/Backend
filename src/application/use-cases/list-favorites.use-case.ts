@@ -9,21 +9,21 @@ export class ListFavoritesUseCase {
     try {
       const favorites = await this.favoriteRepository.listByUserId(userId);
       if (!favorites || !Array.isArray(favorites)) return [];
-      
+
       return favorites
-        .filter(f => f && f.restaurant) // Garante que o favorito e o restaurante associado existam
-        .map(f => {
+        .filter((f) => f && f.restaurant) // Garante que o favorito e o restaurante associado existam
+        .map((f) => {
           const restaurant = f.restaurant;
           const dishes = restaurant.dishes || [];
           const ratings = restaurant.restaurantRatings || [];
-          
-          const averageRating = ratings.length > 0
-            ? ratings.reduce((acc, r) => acc + r.rating, 0) / ratings.length
-            : 4.5; // Fallback se não houver avaliações
 
-          const minPrice = dishes.length > 0
-            ? Math.min(...dishes.map(d => d.price))
-            : 0;
+          const averageRating =
+            ratings.length > 0
+              ? ratings.reduce((acc, r) => acc + r.rating, 0) / ratings.length
+              : 4.5; // Fallback se não houver avaliações
+
+          const minPrice =
+            dishes.length > 0 ? Math.min(...dishes.map((d) => d.price)) : 0;
 
           const dishCount = dishes.length;
 
@@ -38,8 +38,10 @@ export class ListFavoritesUseCase {
             estado: restaurant.estado,
             number: restaurant.number,
             complemento: restaurant.complemento,
+            openingTime: restaurant.openingTime,
+            closingTime: restaurant.closingTime,
             // Usando o campo 'image' do restaurante ou fallback para o usuário
-            profileImage: restaurant.image || (restaurant.user as any)?.profileImage,
+            profileImage: restaurant.image || restaurant.user?.profileImage,
             averageRating: averageRating,
             minPrice: minPrice,
             dishCount: dishCount,
