@@ -61,6 +61,8 @@ export class ListRestaurantService {
             averageRating: restaurantRatings[index].averageRating,
             minPrice: minPrice,
             dishCount: dishCount,
+            openingTime: restaurant.openingTime,
+            closingTime: restaurant.closingTime,
           };
         },
       ),

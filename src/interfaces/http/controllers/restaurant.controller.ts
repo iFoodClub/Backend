@@ -27,6 +27,7 @@ import {
   ApiResponse,
   ApiTags,
   ApiBearerAuth,
+  ApiOperation,
 } from '@nestjs/swagger';
 import { ListRestaurantDtoResponse } from 'src/interfaces/http/dtos/response/listRestaurant.dto';
 import { Http404 } from 'src/interfaces/http/dtos/response/http404';
@@ -60,6 +61,9 @@ import { ConfirmRestaurantEmailChangeUseCase } from 'src/application/use-cases/c
 import { UpdateRestaurantProfileDto } from 'src/interfaces/http/dtos/request/updateRestaurantProfile.dto';
 import { RequestEmailChangeDto } from 'src/interfaces/http/dtos/request/requestEmailChange.dto';
 import { RestaurantProfileResponseDto } from 'src/interfaces/http/dtos/response/restaurantProfile.dto';
+import { ListFavoritesUseCase } from 'src/application/use-cases/list-favorites.use-case';
+import { ToggleFavoriteUseCase } from 'src/application/use-cases/toggle-favorite.use-case';
+import { UserType } from 'src/domain/models/user.model';
 
 @ApiTags('Restaurant API')
 @ApiExtraModels(
@@ -87,6 +91,8 @@ export class RestaurantController {
     private readonly updateRestaurantProfileUseCase: UpdateRestaurantProfileUseCase,
     private readonly requestRestaurantEmailChangeUseCase: RequestRestaurantEmailChangeUseCase,
     private readonly confirmRestaurantEmailChangeUseCase: ConfirmRestaurantEmailChangeUseCase,
+    private listFavoritesUseCase: ListFavoritesUseCase,
+    private toggleFavoriteUseCase: ToggleFavoriteUseCase,
   ) {}
 
   @Get()
@@ -156,10 +162,15 @@ export class RestaurantController {
     if (!(userId && name && cnpj && cep && number)) {
       res.status(400).json({
         sucess: false,
-        message: 'Todos os campos são obrigatórios',
+        message: 'Todos os campos obrigatórios devem ser preenchidos',
       });
       return;
     }
+
+    // Set default hours if not provided
+    restaurant.openingTime = restaurant.openingTime || '08:00';
+    restaurant.closingTime = restaurant.closingTime || '18:00';
+
     await this.createRestaurantService.execute(restaurant);
     res.send();
   }
@@ -726,6 +737,73 @@ export class RestaurantController {
           message: 'Erro interno do servidor',
         });
       }
+    }
+  }
+
+  @ApiTags('Favorites')
+  @Post('favorites/toggle')
+  @ApiOperation({
+    summary:
+      'Adiciona ou remove um restaurante dos favoritos (apenas empresas)',
+  })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        userId: { type: 'number', example: 7 },
+        restaurantId: { type: 'number', example: 2 },
+        userType: {
+          type: 'string',
+          enum: ['company', 'employee', 'restaurant'],
+          example: 'company',
+        },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Status de favorito alternado com sucesso',
+  })
+  @ApiResponse({
+    status: 403,
+    description: 'Proibido: Apenas empresas podem favoritar',
+  })
+  async toggleFavorite(
+    @Body() data: { userId: number; restaurantId: number; userType: UserType },
+    @Res() res: Response,
+  ) {
+    try {
+      const result = await this.toggleFavoriteUseCase.execute(
+        data.userId,
+        data.restaurantId,
+        data.userType,
+      );
+      return res.status(200).json(result);
+    } catch (error) {
+      console.error('Erro ao alternar favorito:', error);
+      return res
+        .status(500)
+        .json({ success: false, message: 'Erro interno ao alternar favorito' });
+    }
+  }
+
+  @ApiTags('Favorites')
+  @Get('favorites/:userId')
+  @ApiOperation({
+    summary: 'Lista todos os restaurantes favoritos de um usuário',
+  })
+  @ApiParam({ name: 'userId', description: 'ID do usuário' })
+  @ApiResponse({
+    status: 200,
+    description: 'Lista de favoritos retornada com sucesso',
+  })
+  async listFavorites(@Param('userId') userId: string, @Res() res: Response) {
+    try {
+      const favorites = await this.listFavoritesUseCase.execute(Number(userId));
+      return res.status(200).json(favorites || []);
+    } catch (error) {
+      console.error('Erro ao listar favoritos:', error);
+      return res.status(200).json([]);
     }
   }
 }
