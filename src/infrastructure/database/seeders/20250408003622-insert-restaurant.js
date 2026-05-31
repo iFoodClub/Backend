@@ -90,7 +90,7 @@ module.exports = {
         estado: 'SP',
         number: '303',
         complemento: 'Sala 401',
-        image: 'https://www.dbresciachurrascaria.com.br/wp-content/uploads/2022/09/MG_4433.jpg',
+        image: 'https://img.magnific.com/fotos-gratis/uma-grelha-com-uma-variedade-de-carnes_188544-8372.jpg?semt=ais_hybrid&w=740&q=80',
         openingTime: '08:00',
         closingTime: '18:00',
       }
