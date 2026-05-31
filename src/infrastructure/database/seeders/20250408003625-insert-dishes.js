@@ -12,7 +12,7 @@ module.exports = {
           'A classic Italian pasta dish made with eggs, cheese, pancetta, and pepper.',
         price: 12.99,
         image:
-          'https://cdn.urbano.com.br/uploads/espaguete-a-carbonara-800.jpg',
+          'https://cdn.create.vista.com/api/media/small/76101063/stock-photo-pasta-carbonara-on-white-plate',
       },
       {
         id: 2,
@@ -96,7 +96,7 @@ module.exports = {
         description: 'Plant-based burger with all the fixings.',
         price: 11.99,
         image:
-          'https://minimalistbaker.com/wp-content/uploads/2021/04/Best-Vegan-Burger-SQUARE-500-500.jpg',
+          'https://cdn.apartmenttherapy.info/image/upload/f_jpg,q_auto:eco,c_fill,g_auto,w_1500,ar_1:1/tk%2Fphoto%2F2025%2F06-2025%2F2025-06-veggie-burger%2Fveggie-burger-340',
       },
       {
         id: 11,
