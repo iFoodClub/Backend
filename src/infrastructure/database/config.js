@@ -15,27 +15,32 @@ function dialectOptions() {
   };
 }
 
+function connectionConfig() {
+  if (process.env.DATABASE_URL) {
+    return {
+      use_env_variable: 'DATABASE_URL',
+    };
+  }
+
+  return {
+    username: process.env.DB_USERNAME,
+    password: process.env.DB_PASSWORD,
+    database: process.env.DB_DATABASE,
+    host: process.env.DB_HOST,
+    port: process.env.DB_PORT,
+  };
+}
+
+function baseConfig() {
+  return {
+    dialect: 'postgres',
+    logging: false,
+    dialectOptions: dialectOptions(),
+    ...connectionConfig(),
+  };
+}
+
 module.exports = {
-  development: {
-    url: process.env.DATABASE_URL,
-    username: process.env.DB_USERNAME,
-    password: process.env.DB_PASSWORD,
-    database: process.env.DB_DATABASE,
-    host: process.env.DB_HOST,
-    port: process.env.DB_PORT,
-    dialect: 'postgres',
-    logging: false,
-    dialectOptions: dialectOptions(),
-  },
-  production: {
-    url: process.env.DATABASE_URL,
-    username: process.env.DB_USERNAME,
-    password: process.env.DB_PASSWORD,
-    database: process.env.DB_DATABASE,
-    host: process.env.DB_HOST,
-    port: process.env.DB_PORT,
-    dialect: 'postgres',
-    logging: false,
-    dialectOptions: dialectOptions(),
-  },
+  development: baseConfig(),
+  production: baseConfig(),
 };
