@@ -9,6 +9,7 @@ import {
   DescribeLogStreamsCommand,
 } from '@aws-sdk/client-cloudwatch-logs';
 import { ConfigService } from '@nestjs/config';
+import { RequestContextService } from '../observability/request-context.service';
 
 @Injectable()
 export class CloudWatchLoggerService implements LoggerService {
@@ -21,7 +22,10 @@ export class CloudWatchLoggerService implements LoggerService {
   private isInitialized = false;
   private isEnabled = false;
 
-  constructor(private configService: ConfigService) {
+  constructor(
+    private configService: ConfigService,
+    private requestContextService: RequestContextService,
+  ) {
     const region = this.configService.get<string>('AWS_REGION', 'us-east-1');
     this.logGroupName = this.configService.get<string>(
       'CLOUDWATCH_LOG_GROUP',
@@ -115,11 +119,16 @@ export class CloudWatchLoggerService implements LoggerService {
 
   private addToQueue(level: string, message: any, context?: string) {
     const timestamp = Date.now();
+    const requestContext = this.requestContextService.get();
     const formattedMessage = JSON.stringify({
       level,
       timestamp: new Date(timestamp).toISOString(),
-      context: context || 'Application',
-      message: typeof message === 'object' ? JSON.stringify(message) : message,
+      context: context || requestContext?.path || 'Application',
+      requestId: requestContext?.requestId,
+      method: requestContext?.method,
+      path: requestContext?.path,
+      traceparent: requestContext?.traceparent,
+      message,
     });
 
     if (this.isEnabled) {

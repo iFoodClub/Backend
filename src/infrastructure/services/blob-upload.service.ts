@@ -3,6 +3,7 @@ import { DefaultAzureCredential } from '@azure/identity';
 import {
   BlobDownloadResponseParsed,
   BlobServiceClient,
+  StorageSharedKeyCredential,
 } from '@azure/storage-blob';
 
 @Injectable()
@@ -24,11 +25,14 @@ export class AzureBlobUploadService {
     const accountUrl =
       process.env.AZURE_STORAGE_ACCOUNT_URL ||
       `https://${this.accountName}.blob.core.windows.net`;
-    const credential = new DefaultAzureCredential(
-      process.env.AZURE_CLIENT_ID
-        ? { managedIdentityClientId: process.env.AZURE_CLIENT_ID }
-        : undefined,
-    );
+    const storageAccountKey = process.env.AZURE_STORAGE_ACCOUNT_KEY;
+    const credential = storageAccountKey
+      ? new StorageSharedKeyCredential(this.accountName, storageAccountKey)
+      : new DefaultAzureCredential(
+          process.env.AZURE_CLIENT_ID
+            ? { managedIdentityClientId: process.env.AZURE_CLIENT_ID }
+            : undefined,
+        );
 
     this.blobServiceClient = new BlobServiceClient(accountUrl, credential);
 
@@ -52,8 +56,10 @@ export class AzureBlobUploadService {
       const randomString = Math.random().toString(36).substring(7);
       const fileExtension = file.originalname.split('.').pop();
       const fileName = `${timestamp}-${randomString}.${fileExtension}`;
-      const { containerClient, blobName, key } =
-        await this.resolveUploadTarget(folder, fileName);
+      const { containerClient, blobName, key } = await this.resolveUploadTarget(
+        folder,
+        fileName,
+      );
 
       this.logger.log(`Uploading file: ${file.originalname} to ${key}`);
 
@@ -86,9 +92,8 @@ export class AzureBlobUploadService {
     try {
       this.logger.log(`Deleting file: ${key}`);
 
-      const { containerClient, blobName } = await this.getContainerAndBlobFromKey(
-        key,
-      );
+      const { containerClient, blobName } =
+        await this.getContainerAndBlobFromKey(key);
 
       const blobClient = containerClient.getBlockBlobClient(blobName);
       const deleteResponse = await blobClient.deleteIfExists();
@@ -117,9 +122,8 @@ export class AzureBlobUploadService {
     contentLength?: number;
   }> {
     try {
-      const { containerClient, blobName } = await this.getContainerAndBlobFromKey(
-        key,
-      );
+      const { containerClient, blobName } =
+        await this.getContainerAndBlobFromKey(key);
 
       const blobClient = containerClient.getBlockBlobClient(blobName);
       const response = await blobClient.download();
@@ -172,7 +176,8 @@ export class AzureBlobUploadService {
     try {
       const exists = await candidate.exists();
       if (exists) return candidate;
-    } catch (_err) {
+    } catch (error) {
+      void error;
       // ignora e usa o container padrão
     }
 
@@ -187,7 +192,8 @@ export class AzureBlobUploadService {
       if (await candidate.exists()) {
         return { containerClient: candidate, blobName: fileName, key };
       }
-    } catch (_err) {
+    } catch (error) {
+      void error;
       // ignore e usa o container padrão
     }
 
@@ -200,12 +206,17 @@ export class AzureBlobUploadService {
     const parts = key.split('/');
     if (parts.length > 1) {
       const possibleContainer = parts[0];
-      const candidate = this.blobServiceClient.getContainerClient(possibleContainer);
+      const candidate =
+        this.blobServiceClient.getContainerClient(possibleContainer);
       try {
         if (await candidate.exists()) {
-          return { containerClient: candidate, blobName: parts.slice(1).join('/') };
+          return {
+            containerClient: candidate,
+            blobName: parts.slice(1).join('/'),
+          };
         }
-      } catch (_err) {
+      } catch (error) {
+        void error;
         // ignore
       }
     }

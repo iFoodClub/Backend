@@ -57,5 +57,5 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
   CMD node -e "require('http').get('http://localhost:3000/health-check', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"
 
 # Usa dumb-init para melhor gerenciamento de sinais
-# Roda migrations e seeders antes de iniciar
-CMD ["dumb-init", "sh", "-c", "npm run start:prod"] 
+# Sobe a API diretamente; migrations devem ser executadas separadamente
+CMD ["dumb-init", "sh", "-c", "node dist/main"] 

@@ -140,7 +140,7 @@ jobs:
           echo "version=${new_version}" >> $GITHUB_OUTPUT
   docker_build_push_acr:
     name: Build and Push to ACR
-    needs: [build, version]
+    needs: [build, version, migrate]
     if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/development')
     runs-on: ubuntu-latest
     steps:
@@ -178,6 +178,28 @@ jobs:
             foodclub-api:${{ steps.image_tag.outputs.tag }}
             foodclub-api:${{ needs.version.outputs.new_version }}
           platforms: linux/amd64
+
+  migrate:
+    name: Run DB Migrations
+    needs: [build, version]
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/development')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Setup Node.js ${{ env.NODE_VERSION }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+      - name: Install dependencies
+        run: npm ci
+      - name: Build production code
+        run: npm run build
+      - name: Run DB migrations
+        run: npm run db:migrate
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          DB_SSL: ${{ secrets.DB_SSL }}
 
       # TODO: Enable Trivy scan after updating dependencies
       # - name: Run Trivy vulnerability scan
@@ -223,6 +245,13 @@ jobs:
             --name $APP_NAME \
             --resource-group rg-foodclub \
             --image acrfoodclub.azurecr.io/foodclub-api:${IMAGE_TAG}
+
+      - name: Run DB migrations as Container Apps job
+        run: |
+          bash infra/azure/run-containerapp-migration.sh acrfoodclub.azurecr.io/foodclub-api:${IMAGE_TAG}
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          DB_SSL: ${{ secrets.DB_SSL }}
 
   create_release:
     name: Create GitHub Release

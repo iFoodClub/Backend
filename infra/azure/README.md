@@ -32,17 +32,24 @@ $scope = az storage account show --name <nomeUnicoDaStorage> --resource-group rg
 az role assignment create --assignee-object-id $principalId --role "Storage Blob Data Contributor" --scope $scope
 ```
 
-4. No código (Node/Nest) — use `DefaultAzureCredential` e `@azure/storage-blob`. Em ambiente local você pode autenticar via `az login`; em produção, associe a User Assigned Identity ao App Service/VM.
+4. No código (Node/Nest) — use `DefaultAzureCredential` e `@azure/storage-blob`. Se quiser um fallback para desenvolvimento local, também pode usar `AZURE_STORAGE_ACCOUNT_KEY`.
+
+Em ambiente local você pode autenticar via `az login`; em produção, associe a User Assigned Identity ao App Service/VM.
 
 Exemplo rápido (Node):
 
 ```ts
 import { DefaultAzureCredential } from "@azure/identity";
-import { BlobServiceClient } from "@azure/storage-blob";
+import { BlobServiceClient, StorageSharedKeyCredential } from "@azure/storage-blob";
 
-const credential = new DefaultAzureCredential();
+const credential = process.env.AZURE_STORAGE_ACCOUNT_KEY
+  ? new StorageSharedKeyCredential(
+      process.env.AZURE_STORAGE_ACCOUNT_NAME,
+      process.env.AZURE_STORAGE_ACCOUNT_KEY,
+    )
+  : new DefaultAzureCredential();
 const blobServiceClient = new BlobServiceClient(
-  `https://${process.env.STORAGE_ACCOUNT_NAME}.blob.core.windows.net`,
+  `https://${process.env.AZURE_STORAGE_ACCOUNT_NAME}.blob.core.windows.net`,
   credential
 );
 

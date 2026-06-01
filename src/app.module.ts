@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { MiddlewareConsumer, Module, NestModule, RequestMethod } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { DishModule } from './interfaces/http/dish.module';
 import { DatabaseModule } from './infrastructure/database/database.module';
@@ -25,6 +25,7 @@ import { FavoriteModule } from './interfaces/http/favorite.module';
 import { ObservabilityModule } from './interfaces/http/observability.module';
 import { APP_INTERCEPTOR } from '@nestjs/core';
 import { MetricsInterceptor } from './infrastructure/observability/metrics.interceptor';
+import { RequestContextMiddleware } from './infrastructure/observability/request-context.middleware';
 // import { AuditLogModule } from './interfaces/http/audit-log.module'; // Desabilitado temporariamente - Mongoose/MongoDB
 
 @Module({
@@ -58,10 +59,17 @@ import { MetricsInterceptor } from './infrastructure/observability/metrics.inter
     RestaurantRatingController,
   ],
   providers: [
+    RequestContextMiddleware,
     {
       provide: APP_INTERCEPTOR,
       useClass: MetricsInterceptor,
     },
   ],
 })
-export class AppModule {}
+export class AppModule implements NestModule {
+  configure(consumer: MiddlewareConsumer) {
+    consumer
+      .apply(RequestContextMiddleware)
+      .forRoutes({ path: '*', method: RequestMethod.ALL });
+  }
+}

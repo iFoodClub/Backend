@@ -13,17 +13,20 @@ import { Observable, throwError } from 'rxjs';
 import { tap, catchError } from 'rxjs/operators';
 import { CloudWatchMetricsService } from '../services/cloudwatch-metrics.service';
 import { CloudWatchLoggerService } from '../services/cloudwatch-logger.service';
+import { RequestContextService } from './request-context.service';
 
 @Injectable()
 export class MetricsInterceptor implements NestInterceptor {
   constructor(
     private metricsService: CloudWatchMetricsService,
     private logger: CloudWatchLoggerService,
+    private requestContextService: RequestContextService,
   ) {}
 
   intercept(context: ExecutionContext, next: CallHandler): Observable<any> {
     const request = context.switchToHttp().getRequest();
     const { method, url } = request;
+    const requestId = this.requestContextService.getRequestId();
     const startTime = Date.now();
 
     // Ignorar health checks para não poluir logs/métricas
@@ -33,7 +36,7 @@ export class MetricsInterceptor implements NestInterceptor {
     }
 
     return next.handle().pipe(
-      tap(async () => {
+      tap(() => {
         const response = context.switchToHttp().getResponse();
         const duration = Date.now() - startTime;
         const statusCode = response.statusCode;
@@ -41,6 +44,8 @@ export class MetricsInterceptor implements NestInterceptor {
         // Log da requisição
         this.logger.log(
           {
+            requestId,
+            traceparent: this.requestContextService.get()?.traceparent,
             method,
             url,
             statusCode,
@@ -51,12 +56,14 @@ export class MetricsInterceptor implements NestInterceptor {
         );
 
         // Enviar métricas
-        await this.metricsService.recordApiRequest(
-          this.sanitizeEndpoint(url),
-          method,
-          statusCode,
-          duration,
-        );
+        void this.metricsService
+          .recordApiRequest(
+            this.sanitizeEndpoint(url),
+            method,
+            statusCode,
+            duration,
+          )
+          .catch(() => undefined);
       }),
       catchError((error) => {
         const duration = Date.now() - startTime;
@@ -64,6 +71,8 @@ export class MetricsInterceptor implements NestInterceptor {
         // Log do erro
         this.logger.error(
           {
+            requestId,
+            traceparent: this.requestContextService.get()?.traceparent,
             method,
             url,
             duration: `${duration}ms`,
