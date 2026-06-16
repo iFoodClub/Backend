@@ -16,6 +16,8 @@ module.exports = {
         number: '123',
         complemento: 'Sala 101',
         image: 'https://dynamic-media-cdn.tripadvisor.com/media/photo-o/1b/d9/aa/99/nova-unidade-do-sabores.jpg?w=900&h=-1&s=1',
+        openingTime: '08:00',
+        closingTime: '18:00',
       },
       {
         id: 2,
@@ -29,6 +31,8 @@ module.exports = {
         number: '456',
         complemento: 'Loja 2',
         image: 'https://resize.casapino.com.br/?u=https://cms-bomgourmet.s3.amazonaws.com/bomgourmet/2019/01/201901/osteria-trattoria-ristorante-italia-18ceab70.jpg&w=480',
+        openingTime: '08:00',
+        closingTime: '18:00',
       },
       {
         id: 3,
@@ -42,6 +46,8 @@ module.exports = {
         number: '789',
         complemento: 'Térreo',
         image: 'https://s3-media0.fl.yelpcdn.com/bphoto/x3K3E8xCcUuQkLjRvilM6Q/o.jpg',
+        openingTime: '08:00',
+        closingTime: '18:00',
       },
       {
         id: 4,
@@ -55,6 +61,8 @@ module.exports = {
         number: '101',
         complemento: 'Sala 205',
         image: 'https://images.adsttc.com/media/images/5bf3/5d1c/08a5/e509/1100/014e/newsletter/FEATURE_IMAGE.jpg?1542675707',
+        openingTime: '08:00',
+        closingTime: '18:00',
       },
       {
         id: 5,
@@ -68,6 +76,8 @@ module.exports = {
         number: '202',
         complemento: 'Loja 15',
         image: 'https://simonde.com.br/wp-content/uploads/2019/11/restaurante-teva-vegetal-vegano-vegetariano-organico-sao-paulo-pinheiros-1200-5.jpg.webp',
+        openingTime: '08:00',
+        closingTime: '18:00',
       },
       {
         id: 6,
@@ -80,7 +90,9 @@ module.exports = {
         estado: 'SP',
         number: '303',
         complemento: 'Sala 401',
-        image: 'https://www.dbresciachurrascaria.com.br/wp-content/uploads/2022/09/MG_4433.jpg',
+        image: 'https://img.magnific.com/fotos-gratis/uma-grelha-com-uma-variedade-de-carnes_188544-8372.jpg?semt=ais_hybrid&w=740&q=80',
+        openingTime: '08:00',
+        closingTime: '18:00',
       }
     ]);
   },

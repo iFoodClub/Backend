@@ -1,8 +1,5 @@
-#!/bin/sh
-. "$(dirname "$0")/_/husky.sh"
-
 echo "🔍 Verificando tipos (TypeScript)..."
-npx tsc --noEmit
+./node_modules/.bin/tsc --noEmit
 
 echo "💅 Formatando e corrigindo Lint (apenas arquivos alterados)..."
-npx lint-staged
+./node_modules/.bin/lint-staged

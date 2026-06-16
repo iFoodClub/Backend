@@ -15,8 +15,8 @@ export class UploadImageResponseDto {
 
   @ApiProperty({
     example: {
-      url: 'https://foodclub-uploads.s3.us-east-1.amazonaws.com/dishes/1697123456789-abc123.jpg',
-      key: 'dishes/1697123456789-abc123.jpg',
+      url: 'http://localhost:3000/upload/image?key=pratos%2F1697123456789-abc123.jpg',
+      key: 'pratos/1697123456789-abc123.jpg',
     },
     description: 'Dados da imagem enviada',
   })

@@ -1,4 +1,12 @@
-import { Table, Model, Column, DataType, BelongsTo, HasMany, ForeignKey } from 'sequelize-typescript';
+import {
+  Table,
+  Model,
+  Column,
+  DataType,
+  BelongsTo,
+  HasMany,
+  ForeignKey,
+} from 'sequelize-typescript';
 import { UserEntity } from './user.entity';
 import { DishEntity } from './dish.entity';
 import { CompanyOrderEntity } from './company-order.entity';
@@ -75,6 +83,24 @@ export class RestaurantEntity extends Model {
     allowNull: true,
   })
   image: string;
+
+  @Column({
+    type: DataType.STRING(20),
+    allowNull: true,
+  })
+  phone: string;
+
+  @Column({
+    type: DataType.STRING(5),
+    allowNull: true,
+  })
+  openingTime: string;
+
+  @Column({
+    type: DataType.STRING(5),
+    allowNull: true,
+  })
+  closingTime: string;
 
   @BelongsTo(() => UserEntity)
   user: UserEntity;

@@ -1,5 +1,6 @@
 import {
   Controller,
+  Get,
   Post,
   Delete,
   UseInterceptors,
@@ -10,8 +11,13 @@ import {
   HttpCode,
   HttpStatus,
   UseGuards,
+  Req,
+  Query,
+  Res,
+  StreamableFile,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
+import { memoryStorage } from 'multer';
 import {
   ApiTags,
   ApiConsumes,
@@ -20,19 +26,23 @@ import {
   ApiOperation,
   ApiParam,
   ApiExtraModels,
+  ApiBearerAuth,
+  ApiQuery,
 } from '@nestjs/swagger';
-import { S3UploadService } from '../../../infrastructure/services/s3-upload.service';
+import { Request, Response } from 'express';
+import { Readable } from 'stream';
+import { AzureBlobUploadService } from '../../../infrastructure/services/blob-upload.service';
 import {
   UploadImageRequestDto,
   DeleteImageRequestDto,
 } from '../dtos/request/upload-request.dto';
-
 import {
   UploadImageResponseDto,
   DeleteImageResponseDto,
 } from '../dtos/response/upload-response.dto';
 import { JwtAuthGuard } from 'src/infrastructure/guards/jwt-auth.guard';
 import { UploadAuthorizationGuard } from 'src/infrastructure/guards/upload-authorization.guard';
+import { UploadOwnershipGuard } from 'src/infrastructure/guards/upload-ownership.guard';
 
 @ApiTags('Upload de Imagens')
 @ApiExtraModels(
@@ -42,66 +52,95 @@ import { UploadAuthorizationGuard } from 'src/infrastructure/guards/upload-autho
   DeleteImageResponseDto,
 )
 @Controller('upload')
-@UseGuards(JwtAuthGuard, UploadAuthorizationGuard)
 export class UploadController {
-  constructor(private readonly s3UploadService: S3UploadService) {}
+  constructor(
+    private readonly azureBlobUploadService: AzureBlobUploadService,
+  ) { }
+
+  private buildPublicImageUrl(request: Request, key: string): string {
+    const forwardedProto = request.get('x-forwarded-proto');
+    const protocol = forwardedProto?.split(',')[0]?.trim() || request.protocol;
+    const host = request.get('host');
+
+    return `${protocol}://${host}/upload/image?key=${encodeURIComponent(key)}`;
+  }
+
+  @Get('image')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Obter imagem armazenada no Blob Storage',
+    description: 'Retorna a imagem salva no Blob Storage via proxy do backend.',
+  })
+  @ApiQuery({
+    name: 'key',
+    required: true,
+    description: 'Chave do arquivo no Blob Storage',
+    example: 'pratos/1697123456789-abc123.jpg',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Imagem retornada com sucesso',
+  })
+  async getImage(
+    @Query('key') key: string,
+    @Res({ passthrough: true }) res: Response,
+  ): Promise<StreamableFile> {
+    if (!key) {
+      throw new BadRequestException('A chave do arquivo é obrigatória');
+    }
+
+    const file = await this.azureBlobUploadService.downloadFile(key);
+
+    res.setHeader(
+      'Content-Type',
+      file.contentType || 'application/octet-stream',
+    );
+    if (file.contentLength !== undefined) {
+      res.setHeader('Content-Length', file.contentLength.toString());
+    }
+    res.setHeader('Cache-Control', 'private, max-age=300');
+
+    const nodeStream = file.stream as unknown as Readable;
+    return new StreamableFile(nodeStream);
+  }
 
   @Post('image/:folder')
   @HttpCode(HttpStatus.CREATED)
-  @UseInterceptors(FileInterceptor('file'))
+  @UseGuards(JwtAuthGuard, UploadAuthorizationGuard, UploadOwnershipGuard)
+  @UseInterceptors(
+    FileInterceptor('file', {
+      storage: memoryStorage(),
+      limits: {
+        fileSize: 5 * 1024 * 1024,
+      },
+    }),
+  )
+  @ApiBearerAuth('JWT-auth')
   @ApiOperation({
-    summary: 'Upload de imagem para o S3',
+    summary: 'Upload de imagem para o Azure Blob Storage',
     description: `
-      Faz upload de uma imagem para o bucket AWS S3.
-      
-      **Pastas disponíveis:**
-      - \`dishes\` - Fotos de pratos dos restaurantes
-      - \`users\` - Fotos de perfil de usuários/funcionários
-      - \`restaurants\` - Fotos de perfil dos restaurantes
-      - \`companies\` - Logos das empresas
-      
+      Faz upload de uma imagem para o Azure Blob Storage.
+
+      **Containers disponíveis:**
+      - \`pratos\` - Fotos de pratos dos restaurantes
+      - \`perfis\` - Fotos de perfil de restaurantes e empresas
+      - \`funcionarios\` - Fotos de funcionários
+
       **Tipos aceitos:** JPEG, PNG, GIF, WebP
       **Tamanho máximo:** 5MB
-      
-      **Como usar no Swagger:**
-      1. Clique em "Try it out"
-      2. Escolha a pasta (folder) no dropdown
-      3. Clique em "Choose File" e selecione sua imagem
-      4. Clique em "Execute"
-      
-      **Como usar com cURL:**
-      \`\`\`bash
-      curl -X POST "http://localhost:3000/upload/image/dishes" \\
-        -H "Content-Type: multipart/form-data" \\
-        -F "file=@/path/to/image.jpg"
-      \`\`\`
-      
-      **Como usar no código (JavaScript/TypeScript):**
-      \`\`\`javascript
-      const formData = new FormData();
-      formData.append('file', file);
-      
-      const response = await fetch('http://localhost:3000/upload/image/dishes', {
-        method: 'POST',
-        body: formData
-      });
-      
-      const data = await response.json();
-      console.log('URL da imagem:', data.data.url);
-      \`\`\`
     `,
   })
   @ApiConsumes('multipart/form-data')
   @ApiParam({
     name: 'folder',
-    description: 'Pasta de destino no S3',
-    example: 'dishes',
-    enum: ['dishes', 'users', 'restaurants', 'companies'],
+    description: 'Pasta lógica de destino no Blob Storage',
+    example: 'pratos',
+    enum: ['pratos', 'perfis', 'funcionarios'],
     required: true,
     schema: {
       type: 'string',
-      enum: ['dishes', 'users', 'restaurants', 'companies'],
-      default: 'dishes',
+      enum: ['pratos', 'perfis', 'funcionarios'],
+      default: 'pratos',
     },
   })
   @ApiBody({
@@ -122,16 +161,27 @@ export class UploadController {
   })
   @ApiResponse({
     status: 201,
-    description: '✅ Imagem enviada com sucesso',
+    description: 'Imagem enviada com sucesso',
     type: UploadImageResponseDto,
     schema: {
       example: {
         success: true,
         message: 'Imagem enviada com sucesso',
         data: {
-          url: 'https://foodclub-uploads.s3.us-east-1.amazonaws.com/dishes/1697123456789-abc123.jpg',
-          key: 'dishes/1697123456789-abc123.jpg',
+          url: 'http://localhost:3000/upload/image?key=pratos%2F1697123456789-abc123.jpg',
+          key: 'pratos/1697123456789-abc123.jpg',
         },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 400,
+    description: '❌ Erro ao fazer upload',
+    schema: {
+      example: {
+        statusCode: 400,
+        message: 'Erro ao fazer upload: ...',
+        error: 'Bad Request',
       },
     },
   })
@@ -152,12 +202,13 @@ export class UploadController {
     schema: {
       example: {
         statusCode: 500,
-        message: 'Erro ao fazer upload: falha na conexão com S3',
+        message: 'Erro ao fazer upload: Failed to upload file: ...',
         error: 'Internal Server Error',
       },
     },
   })
   async uploadImage(
+    @Req() request: Request,
     @UploadedFile() file: Express.Multer.File,
     @Param('folder') folder: string,
   ) {
@@ -165,20 +216,17 @@ export class UploadController {
       throw new BadRequestException('Nenhum arquivo foi enviado');
     }
 
-    // Valida se é uma imagem
-    if (!this.s3UploadService.isValidImageFile(file)) {
+    if (!this.azureBlobUploadService.isValidImageFile(file)) {
       throw new BadRequestException(
         'O arquivo deve ser uma imagem (JPEG, PNG, GIF ou WebP)',
       );
     }
 
-    // Valida o tamanho (máximo 5MB)
-    if (!this.s3UploadService.isValidFileSize(file, 5)) {
+    if (!this.azureBlobUploadService.isValidFileSize(file, 5)) {
       throw new BadRequestException('O arquivo deve ter no máximo 5MB');
     }
 
-    // Valida a pasta
-    const allowedFolders = ['dishes', 'users', 'restaurants', 'companies'];
+    const allowedFolders = ['pratos', 'perfis', 'funcionarios'];
     if (!allowedFolders.includes(folder)) {
       throw new BadRequestException(
         `Pasta inválida. Use uma das seguintes: ${allowedFolders.join(', ')}`,
@@ -186,12 +234,16 @@ export class UploadController {
     }
 
     try {
-      const result = await this.s3UploadService.uploadFile(file, folder);
+      const result = await this.azureBlobUploadService.uploadFile(file, folder);
+      const url = this.buildPublicImageUrl(request, result.key);
 
       return {
         success: true,
         message: 'Imagem enviada com sucesso',
-        data: result,
+        data: {
+          url,
+          key: result.key,
+        },
       };
     } catch (error) {
       const errorMessage =
@@ -202,42 +254,14 @@ export class UploadController {
 
   @Delete('image')
   @HttpCode(HttpStatus.OK)
+  @UseGuards(JwtAuthGuard, UploadAuthorizationGuard, UploadOwnershipGuard)
+  @ApiBearerAuth('JWT-auth')
   @ApiOperation({
-    summary: 'Deletar imagem do S3',
+    summary: 'Deletar imagem do Azure Blob Storage',
     description: `
-      Remove permanentemente uma imagem do bucket AWS S3.
-      
+      Remove permanentemente uma imagem do Azure Blob Storage.
+
       **⚠️ ATENÇÃO:** Esta ação não pode ser desfeita!
-      
-      **Como obter a chave (key):**
-      - A chave é retornada no campo \`data.key\` quando você faz o upload
-      - Exemplo: \`dishes/1697123456789-abc123.jpg\`
-      
-      **Como usar no Swagger:**
-      1. Clique em "Try it out"
-      2. Cole a chave do arquivo no campo "key"
-      3. Clique em "Execute"
-      
-      **Como usar com cURL:**
-      \`\`\`bash
-      curl -X DELETE "http://localhost:3000/upload/image" \\
-        -H "Content-Type: application/json" \\
-        -d '{"key": "dishes/1697123456789-abc123.jpg"}'
-      \`\`\`
-      
-      **Como usar no código (JavaScript/TypeScript):**
-      \`\`\`javascript
-      const response = await fetch('http://localhost:3000/upload/image', {
-        method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          key: 'dishes/1697123456789-abc123.jpg'
-        })
-      });
-      
-      const data = await response.json();
-      console.log(data.message);
-      \`\`\`
     `,
   })
   @ApiBody({
@@ -257,13 +281,13 @@ export class UploadController {
     schema: {
       example: {
         success: true,
-        message: { type: 'string', example: 'Imagem deletada com sucesso' },
+        message: 'Imagem deletada com sucesso',
+        data: {
+          url: 'http://localhost:3000/upload/image?key=pratos%2F1697123456789-abc123.jpg',
+          key: 'pratos/1697123456789-abc123.jpg',
+        },
       },
     },
-  })
-  @ApiResponse({
-    status: 400,
-    description: '❌ Erro ao deletar imagem',
   })
   async deleteImage(@Body() body: { key: string }) {
     if (!body.key) {
@@ -271,7 +295,7 @@ export class UploadController {
     }
 
     try {
-      await this.s3UploadService.deleteFile(body.key);
+      await this.azureBlobUploadService.deleteFile(body.key);
 
       return {
         success: true,

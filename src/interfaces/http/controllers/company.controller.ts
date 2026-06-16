@@ -43,6 +43,10 @@ import { ListWeeklyOrdersByCompanyService } from 'src/application/use-cases/list
 import { CreateOrdersFromWeeklyOrdersUseCase } from 'src/application/use-cases/create-orders-from-weekly-orders.use-case';
 import { CompanyWeeklyOrdersResponse } from 'src/interfaces/http/dtos/response/companyWeeklyOrders.dto';
 import { CreateOrdersFromWeeklyResponse } from 'src/interfaces/http/dtos/response/createOrdersFromWeeklyResponse.dto';
+import { SetCompanyOrderScheduleUseCase } from 'src/application/use-cases/set-company-order-schedule.use-case';
+import { GetCompanyOrderScheduleUseCase } from 'src/application/use-cases/get-company-order-schedule.use-case';
+import { SetCompanyOrderScheduleDto } from 'src/interfaces/http/dtos/request/setCompanyOrderSchedule.dto';
+import { CompanyOrderScheduleResponseDto } from 'src/interfaces/http/dtos/response/companyOrderSchedule.dto';
 import { SqlInjectionGuard } from '../../../infrastructure/security/sql-injection.guard';
 import { InputValidationPipe } from '../../../infrastructure/security/input-validation.pipe';
 import { JwtAuthGuard } from 'src/infrastructure/guards/jwt-auth.guard';
@@ -106,6 +110,8 @@ export class CompanyController {
     private createCompanyOrderUseCase: CreateCompanyOrderUseCase,
     private listWeeklyOrdersByCompanyService: ListWeeklyOrdersByCompanyService,
     private createOrdersFromWeeklyOrdersUseCase: CreateOrdersFromWeeklyOrdersUseCase,
+    private readonly setCompanyOrderScheduleUseCase: SetCompanyOrderScheduleUseCase,
+    private readonly getCompanyOrderScheduleUseCase: GetCompanyOrderScheduleUseCase,
   ) {}
 
   @Get()
@@ -231,6 +237,7 @@ export class CompanyController {
       'number',
       'restaurantId',
       'profileImage',
+      'orderCutoffTime',
     ];
     const receivedFields = Object.keys(companyData);
     const invalidFields = receivedFields.filter(
@@ -502,6 +509,107 @@ export class CompanyController {
           message: 'Erro interno do servidor',
           error:
             process.env.NODE_ENV === 'development' ? errorMessage : undefined,
+        });
+      }
+    }
+  }
+
+  @Get(':id/order-schedule')
+  @ApiParam({
+    name: 'id',
+    description: 'ID da empresa',
+  })
+  @ApiResponse({
+    status: 200,
+    description:
+      'Horários de disparo automático configurados pela empresa e horários de funcionamento do restaurante associado',
+    type: CompanyOrderScheduleResponseDto,
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Empresa não encontrada',
+    type: Http404,
+  })
+  async getOrderSchedule(
+    @Param('id') id: string,
+    @Res() res: Response,
+  ): Promise<void> {
+    try {
+      const result = await this.getCompanyOrderScheduleUseCase.execute(
+        Number(id),
+      );
+      res.status(200).json(result);
+    } catch (error) {
+      if (error instanceof NotFoundException) {
+        res.status(404).json({
+          success: false,
+          message: error.message,
+        });
+      } else {
+        res.status(500).json({
+          success: false,
+          message: 'Erro interno do servidor',
+        });
+      }
+    }
+  }
+
+  @UseGuards(JwtAuthGuard, UploadAuthorizationGuard, UploadOwnershipGuard)
+  @ApiBearerAuth('JWT-auth')
+  @Put(':id/order-schedule')
+  @ApiParam({
+    name: 'id',
+    description: 'ID da empresa',
+  })
+  @ApiBody({
+    description:
+      'Lista de horários de disparo automático do pedido por dia da semana',
+    type: SetCompanyOrderScheduleDto,
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Horários de disparo configurados com sucesso',
+    type: CompanyOrderScheduleResponseDto,
+  })
+  @ApiResponse({
+    status: 400,
+    description:
+      'Horário de disparo fora do funcionamento do restaurante ou dados inválidos',
+    type: Http400,
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Empresa ou restaurante não encontrado',
+    type: Http404,
+  })
+  async setOrderSchedule(
+    @Param('id') id: string,
+    @Body() body: SetCompanyOrderScheduleDto,
+    @Res() res: Response,
+  ): Promise<void> {
+    try {
+      await this.setCompanyOrderScheduleUseCase.execute(Number(id), {
+        schedule: body.schedule,
+      });
+      const result = await this.getCompanyOrderScheduleUseCase.execute(
+        Number(id),
+      );
+      res.status(200).json(result);
+    } catch (error) {
+      if (error instanceof NotFoundException) {
+        res.status(404).json({
+          success: false,
+          message: error.message,
+        });
+      } else if (error instanceof BadRequestException) {
+        res.status(400).json({
+          success: false,
+          message: error.message,
+        });
+      } else {
+        res.status(500).json({
+          success: false,
+          message: 'Erro interno do servidor',
         });
       }
     }

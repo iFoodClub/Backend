@@ -14,9 +14,9 @@ permissions:
   contents: write
 
 env:
-  NODE_VERSION: '20'
-  AWS_REGION: 'sa-east-1'
-  EB_APP_NAME: 'FoodClub-App'
+  NODE_VERSION: "20"
+  AWS_REGION: "sa-east-1"
+  EB_APP_NAME: "FoodClub-App"
 
 jobs:
   validate:
@@ -40,9 +40,33 @@ jobs:
       # - name: Run linter
       #   run: npm run lint
 
+  security:
+    permissions:
+      contents: read
+      actions: read
+      security-events: write
+    name: Security Scans
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v2
+        with:
+          languages: "javascript-typescript"
+
+      - name: Build for CodeQL
+        uses: github/codeql-action/autobuild@v2
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v2
+        with:
+          category: "/language:javascript-typescript"
+
   build:
     name: Build Application
-    needs: validate
+    needs: [validate, security]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -80,7 +104,7 @@ jobs:
         run: |
           git fetch --tags
           latest_tag=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
-          
+
           if [ -z "$latest_tag" ]; then
             # Primeira versão - sem tags existentes
             major=0
@@ -91,11 +115,11 @@ jobs:
             major=$(echo $latest_tag | cut -d. -f1 | tr -d 'v')
             minor=$(echo $latest_tag | cut -d. -f2)
             patch=$(echo $latest_tag | cut -d. -f3)
-            
+
             # Analisa commits desde a última tag
             commits=$(git log $latest_tag..HEAD --pretty=format:"%s")
           fi
-          
+
           if echo "$commits" | grep -qE "BREAKING|MAJOR"; then
             major=$((major + 1)); minor=0; patch=0;
           elif echo "$commits" | grep -qE "feat|feature|MINOR"; then
@@ -103,15 +127,15 @@ jobs:
           elif echo "$commits" | grep -qE "fix|chore|docs|style|refactor|perf|test"; then
             patch=$((patch + 1));
           fi
-          
+
           base_version="v$major.$minor.$patch"
-          
+
           if [ "${{ github.ref_name }}" == "development" ]; then
             new_version="${base_version}.dev.${{ github.run_number }}"
           else
             new_version="${base_version}"
           fi
-          
+
           echo "Generated Version: $new_version"
           echo "version=${new_version}" >> $GITHUB_OUTPUT
   docker_build_push_acr:
@@ -133,23 +157,45 @@ jobs:
           echo ${{ secrets.ACR_PASSWORD }} | docker login acrfoodclub.azurecr.io -u ${{ secrets.ACR_USERNAME }} --password-stdin
 
       - name: Set Image Tag
+        id: image_tag
         run: |
           if [ "${{ github.ref_name }}" == "main" ]; then
             echo "IMAGE_TAG=prod" >> $GITHUB_ENV
+            echo "tag=prod" >> $GITHUB_OUTPUT
           else
             echo "IMAGE_TAG=hml" >> $GITHUB_ENV
+            echo "tag=hml" >> $GITHUB_OUTPUT
           fi
 
-      - name: Build and push Docker image
+      - name: Build Docker image locally
         uses: docker/build-push-action@v5
         with:
           context: .
           file: ./Dockerfile
-          push: true
+          push: false
+          load: true
           tags: |
-            acrfoodclub.azurecr.io/foodclub-api:${{ env.IMAGE_TAG }}
-            acrfoodclub.azurecr.io/foodclub-api:${{ needs.version.outputs.new_version }}
+            foodclub-api:${{ steps.image_tag.outputs.tag }}
+            foodclub-api:${{ needs.version.outputs.new_version }}
           platforms: linux/amd64
+
+      # TODO: Enable Trivy scan after updating dependencies
+      # - name: Run Trivy vulnerability scan
+      #   uses: aquasecurity/trivy-action@master
+      #   with:
+      #     image-ref: foodclub-api:${{ steps.image_tag.outputs.tag }}
+      #     format: 'table'
+      #     exit-code: '1'
+      #     ignore-unfixed: true
+      #     vuln-type: 'os,library'
+      #     severity: 'HIGH,CRITICAL'
+
+      - name: Tag and push Docker image to ACR
+        run: |
+          docker tag foodclub-api:${IMAGE_TAG} acrfoodclub.azurecr.io/foodclub-api:${IMAGE_TAG}
+          docker tag foodclub-api:${{ needs.version.outputs.new_version }} acrfoodclub.azurecr.io/foodclub-api:${{ needs.version.outputs.new_version }}
+          docker push acrfoodclub.azurecr.io/foodclub-api:${IMAGE_TAG}
+          docker push acrfoodclub.azurecr.io/foodclub-api:${{ needs.version.outputs.new_version }}
 
   deploy_azure:
     name: Deploy to Azure Container Apps
@@ -174,9 +220,9 @@ jobs:
       - name: Update Container App
         run: |
           az containerapp update \
-            --name ${{ env.APP_NAME }} \
+            --name $APP_NAME \
             --resource-group rg-foodclub \
-            --image acrfoodclub.azurecr.io/foodclub-api:${{ env.IMAGE_TAG }}
+            --image acrfoodclub.azurecr.io/foodclub-api:${IMAGE_TAG}
 
   create_release:
     name: Create GitHub Release
@@ -189,16 +235,16 @@ jobs:
         with:
           fetch-depth: 0
           token: ${{ secrets.GITHUB_TOKEN }}
-      
+
       - name: Generate Enhanced Changelog
         id: generate_changelog
         run: |
           # Define a data da release
           release_date=$(date '+%d/%m/%Y às %H:%M')
-          
+
           # Pega o último tag se existir
           latest_tag=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
-          
+
           if [ -z "$latest_tag" ]; then
             # Se não há tags, pega todos os commits (excluindo merges)
             commits=$(git log --pretty=format:"* **%s** - %an (%h)" --since="1 week ago" --no-merges)
@@ -206,13 +252,13 @@ jobs:
             # Se há tags, pega commits desde o último tag (excluindo merges)
             commits=$(git log --pretty=format:"* **%s** - %an (%h)" $latest_tag..HEAD --no-merges)
           fi
-          
+
           # Categoriza os commits (ignorando commits de merge e duplicatas)
           features=$(echo "$commits" | grep -E "feat|feature" | grep -v "Merge pull request" || echo "")
           fixes=$(echo "$commits" | grep -E "fix|bugfix" | grep -v "Merge pull request" || echo "")
           improvements=$(echo "$commits" | grep -E "chore|refactor|perf|style" | grep -v "Merge pull request" || echo "")
           docs=$(echo "$commits" | grep -E "docs|doc" | grep -v "Merge pull request" || echo "")
-          
+
           # Cria o changelog estruturado
           {
             echo "changelog<<EOF"
@@ -222,25 +268,25 @@ jobs:
             echo "**🌟 Branch:** ${{ github.ref_name }}"
             echo "**💻 Commit:** [\`${{ github.sha }}\`](https://github.com/${{ github.repository }}/commit/${{ github.sha }})"
             echo ""
-            
+
             if [ ! -z "$features" ]; then
               echo "## ✨ New Features"
               echo "$features"
               echo ""
             fi
-            
+
             if [ ! -z "$fixes" ]; then
               echo "## 🐛 Bug Fixes"
               echo "$fixes"
               echo ""
             fi
-            
+
             if [ ! -z "$improvements" ]; then
               echo "## 🔧 Improvements and Optimizations"
               echo "$improvements"
               echo ""
             fi
-            
+
             if [ ! -z "$docs" ]; then
               echo "## 📚 Documentation"
               echo "$docs"
@@ -255,12 +301,12 @@ jobs:
             echo "*Automatic generated release - GitHub Actions*"
             echo "EOF"
           } >> $GITHUB_OUTPUT
-      
+
       - name: Create Git Tag
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          
+
           # Cria a tag localmente
           git tag -a "${{ needs.version.outputs.new_version }}" -m "🏷️ Release ${{ needs.version.outputs.new_version }}
 
@@ -268,10 +314,10 @@ jobs:
           🌟 Branch: ${{ github.ref_name }}
           💻 Commit: ${{ github.sha }}
           🚀 Deploy: Automático via GitHub Actions"
-          
+
           # Push da tag para o repositório
           git push origin "${{ needs.version.outputs.new_version }}"
-      
+
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
@@ -283,10 +329,11 @@ jobs:
           make_latest: ${{ github.ref == 'refs/heads/main' }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-  
+
   notify_failure:
     name: Send Notification
-    needs: [validate, build, deploy_azure, docker_build_push_acr, create_release]
+    needs:
+      [validate, build, deploy_azure, docker_build_push_acr, create_release]
     if: failure()
     runs-on: ubuntu-latest
     steps:
@@ -298,10 +345,10 @@ jobs:
           secure: true
           username: ${{ secrets.FOODCLUB_EMAIL }}
           password: ${{ secrets.FOODCLUB_EMAIL_PASSWORD }}
-          subject: '❌ Falha no Pipeline - FoodClub Server'
+          subject: "❌ Falha no Pipeline - FoodClub Server"
           to: seu-email-de-notificacao@exemplo.com
           from: GitHub Actions <${{ secrets.NOTIFICATION_EMAIL }}>
           html_body: |
             <h2>Falha no Pipeline do FoodClub Server</h2>
             <p>Ocorreu uma falha no pipeline de CI/CD para a branch <strong>${{ github.ref_name }}</strong>.</p>
-            <p>Para ver os detalhes, <a href="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}">clique aqui</a>.</p>
+            <p>Para ver os detalhes, <a href="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}">clique aqui</a>.</p>

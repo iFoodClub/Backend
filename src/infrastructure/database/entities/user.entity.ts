@@ -57,6 +57,27 @@ export class UserEntity extends Model {
   })
   verificationTokenExpireAt: Date;
 
+  @Column({
+    type: DataType.STRING(100),
+    allowNull: true,
+    field: 'pending_email',
+  })
+  pendingEmail: string;
+
+  @Column({
+    type: DataType.STRING(100),
+    allowNull: true,
+    field: 'email_change_token',
+  })
+  emailChangeToken: string;
+
+  @Column({
+    type: DataType.DATE,
+    allowNull: true,
+    field: 'email_change_token_expires_at',
+  })
+  emailChangeTokenExpiresAt: Date;
+
   @HasOne(() => CompanyEntity)
   company: CompanyEntity;
 

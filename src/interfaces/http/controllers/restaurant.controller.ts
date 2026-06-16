@@ -9,6 +9,7 @@ import {
   Put,
   Res,
   NotFoundException,
+  BadRequestException,
   UseGuards,
   UsePipes,
 } from '@nestjs/common';
@@ -26,6 +27,7 @@ import {
   ApiResponse,
   ApiTags,
   ApiBearerAuth,
+  ApiOperation,
 } from '@nestjs/swagger';
 import { ListRestaurantDtoResponse } from 'src/interfaces/http/dtos/response/listRestaurant.dto';
 import { Http404 } from 'src/interfaces/http/dtos/response/http404';
@@ -53,6 +55,15 @@ import { InputValidationPipe } from '../../../infrastructure/security/input-vali
 import { JwtAuthGuard } from 'src/infrastructure/guards/jwt-auth.guard';
 import { UploadAuthorizationGuard } from 'src/infrastructure/guards/upload-authorization.guard';
 import { UploadOwnershipGuard } from 'src/infrastructure/guards/upload-ownership.guard';
+import { UpdateRestaurantProfileUseCase } from 'src/application/use-cases/update-restaurant-profile.use-case';
+import { RequestRestaurantEmailChangeUseCase } from 'src/application/use-cases/request-restaurant-email-change.use-case';
+import { ConfirmRestaurantEmailChangeUseCase } from 'src/application/use-cases/confirm-restaurant-email-change.use-case';
+import { UpdateRestaurantProfileDto } from 'src/interfaces/http/dtos/request/updateRestaurantProfile.dto';
+import { RequestEmailChangeDto } from 'src/interfaces/http/dtos/request/requestEmailChange.dto';
+import { RestaurantProfileResponseDto } from 'src/interfaces/http/dtos/response/restaurantProfile.dto';
+import { ListFavoritesUseCase } from 'src/application/use-cases/list-favorites.use-case';
+import { ToggleFavoriteUseCase } from 'src/application/use-cases/toggle-favorite.use-case';
+import { UserType } from 'src/domain/models/user.model';
 
 @ApiTags('Restaurant API')
 @ApiExtraModels(
@@ -77,6 +88,11 @@ export class RestaurantController {
     private updateIndividualOrderStatusUseCase: UpdateIndividualOrderStatusUseCase,
     private updateCompanyOrderStatusUseCase: UpdateCompanyOrderStatusUseCase,
     private getOrderProgressUseCase: GetOrderProgressUseCase,
+    private readonly updateRestaurantProfileUseCase: UpdateRestaurantProfileUseCase,
+    private readonly requestRestaurantEmailChangeUseCase: RequestRestaurantEmailChangeUseCase,
+    private readonly confirmRestaurantEmailChangeUseCase: ConfirmRestaurantEmailChangeUseCase,
+    private listFavoritesUseCase: ListFavoritesUseCase,
+    private toggleFavoriteUseCase: ToggleFavoriteUseCase,
   ) {}
 
   @Get()
@@ -146,10 +162,15 @@ export class RestaurantController {
     if (!(userId && name && cnpj && cep && number)) {
       res.status(400).json({
         sucess: false,
-        message: 'Todos os campos são obrigatórios',
+        message: 'Todos os campos obrigatórios devem ser preenchidos',
       });
       return;
     }
+
+    // Set default hours if not provided
+    restaurant.openingTime = restaurant.openingTime || '08:00';
+    restaurant.closingTime = restaurant.closingTime || '18:00';
+
     await this.createRestaurantService.execute(restaurant);
     res.send();
   }
@@ -189,8 +210,11 @@ export class RestaurantController {
       'name',
       'cnpj',
       'cep',
+      'rua',
       'number',
       'profileImage',
+      'openingTime',
+      'closingTime',
     ];
     const receivedFields = Object.keys(restaurantData);
     const invalidFields = receivedFields.filter(
@@ -215,6 +239,168 @@ export class RestaurantController {
       return;
     }
     res.status(200).json(restaurant);
+  }
+
+  @UseGuards(JwtAuthGuard, UploadAuthorizationGuard, UploadOwnershipGuard)
+  @ApiBearerAuth('JWT-auth')
+  @Put(':id/profile')
+  @ApiParam({
+    name: 'id',
+    description: 'ID do restaurante',
+  })
+  @ApiBody({
+    type: UpdateRestaurantProfileDto,
+    description:
+      'Dados editáveis do perfil do restaurante (CNPJ e e-mail não são alterados aqui)',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Perfil do restaurante atualizado com sucesso',
+    type: RestaurantProfileResponseDto,
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Dados inválidos ou tentativa de alterar campo proibido',
+    type: Http400,
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Restaurante não encontrado',
+    type: Http404,
+  })
+  async updateProfile(
+    @Param('id') id: string,
+    @Body()
+    body: UpdateRestaurantProfileDto & { cnpj?: unknown; email?: unknown },
+    @Res() res: Response,
+  ): Promise<void> {
+    try {
+      const result = await this.updateRestaurantProfileUseCase.execute(
+        Number(id),
+        body,
+      );
+      res.status(200).json(result);
+    } catch (error) {
+      if (error instanceof NotFoundException) {
+        res.status(404).json({
+          success: false,
+          message: error.message,
+        });
+      } else if (error instanceof BadRequestException) {
+        res.status(400).json({
+          success: false,
+          message: error.message,
+        });
+      } else {
+        res.status(500).json({
+          success: false,
+          message: 'Erro interno do servidor',
+        });
+      }
+    }
+  }
+
+  @UseGuards(JwtAuthGuard, UploadAuthorizationGuard, UploadOwnershipGuard)
+  @ApiBearerAuth('JWT-auth')
+  @Post(':id/email-change')
+  @HttpCode(202)
+  @ApiParam({
+    name: 'id',
+    description: 'ID do restaurante',
+  })
+  @ApiBody({
+    type: RequestEmailChangeDto,
+    description: 'Novo e-mail desejado para o restaurante',
+  })
+  @ApiResponse({
+    status: 202,
+    description:
+      'Solicitação aceita: link de confirmação enviado ao novo e-mail',
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'E-mail inválido, igual ao atual ou já em uso',
+    type: Http400,
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Restaurante não encontrado',
+    type: Http404,
+  })
+  async requestEmailChange(
+    @Param('id') id: string,
+    @Body() body: RequestEmailChangeDto,
+    @Res() res: Response,
+  ): Promise<void> {
+    try {
+      const result = await this.requestRestaurantEmailChangeUseCase.execute(
+        Number(id),
+        body.newEmail,
+      );
+      res.status(202).json({
+        success: true,
+        message: result.message,
+      });
+    } catch (error) {
+      if (error instanceof NotFoundException) {
+        res.status(404).json({
+          success: false,
+          message: error.message,
+        });
+      } else if (error instanceof BadRequestException) {
+        res.status(400).json({
+          success: false,
+          message: error.message,
+        });
+      } else {
+        res.status(500).json({
+          success: false,
+          message: 'Erro interno do servidor',
+        });
+      }
+    }
+  }
+
+  @Post('verify-email-change/:token')
+  @HttpCode(200)
+  @ApiParam({
+    name: 'token',
+    description: 'Token recebido por e-mail para confirmar a troca',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'E-mail confirmado e atualizado',
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Token inválido, expirado ou e-mail já em uso',
+    type: Http400,
+  })
+  async verifyEmailChange(
+    @Param('token') token: string,
+    @Res() res: Response,
+  ): Promise<void> {
+    try {
+      const result =
+        await this.confirmRestaurantEmailChangeUseCase.execute(token);
+      res.status(200).json({
+        success: true,
+        message: result.message,
+        email: result.email,
+      });
+    } catch (error) {
+      if (error instanceof BadRequestException) {
+        res.status(400).json({
+          success: false,
+          message: error.message,
+        });
+      } else {
+        res.status(500).json({
+          success: false,
+          message: 'Erro interno do servidor',
+        });
+      }
+    }
   }
 
   @UseGuards(
@@ -551,6 +737,73 @@ export class RestaurantController {
           message: 'Erro interno do servidor',
         });
       }
+    }
+  }
+
+  @ApiTags('Favorites')
+  @Post('favorites/toggle')
+  @ApiOperation({
+    summary:
+      'Adiciona ou remove um restaurante dos favoritos (apenas empresas)',
+  })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        userId: { type: 'number', example: 7 },
+        restaurantId: { type: 'number', example: 2 },
+        userType: {
+          type: 'string',
+          enum: ['company', 'employee', 'restaurant'],
+          example: 'company',
+        },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Status de favorito alternado com sucesso',
+  })
+  @ApiResponse({
+    status: 403,
+    description: 'Proibido: Apenas empresas podem favoritar',
+  })
+  async toggleFavorite(
+    @Body() data: { userId: number; restaurantId: number; userType: UserType },
+    @Res() res: Response,
+  ) {
+    try {
+      const result = await this.toggleFavoriteUseCase.execute(
+        data.userId,
+        data.restaurantId,
+        data.userType,
+      );
+      return res.status(200).json(result);
+    } catch (error) {
+      console.error('Erro ao alternar favorito:', error);
+      return res
+        .status(500)
+        .json({ success: false, message: 'Erro interno ao alternar favorito' });
+    }
+  }
+
+  @ApiTags('Favorites')
+  @Get('favorites/:userId')
+  @ApiOperation({
+    summary: 'Lista todos os restaurantes favoritos de um usuário',
+  })
+  @ApiParam({ name: 'userId', description: 'ID do usuário' })
+  @ApiResponse({
+    status: 200,
+    description: 'Lista de favoritos retornada com sucesso',
+  })
+  async listFavorites(@Param('userId') userId: string, @Res() res: Response) {
+    try {
+      const favorites = await this.listFavoritesUseCase.execute(Number(userId));
+      return res.status(200).json(favorites || []);
+    } catch (error) {
+      console.error('Erro ao listar favoritos:', error);
+      return res.status(200).json([]);
     }
   }
 }

@@ -17,6 +17,11 @@ describe('RestaurantController', () => {
   let updateIndividualOrderStatus: any;
   let updateCompanyOrderStatus: any;
   let getOrderProgress: any;
+  let updateRestaurantProfile: any;
+  let requestRestaurantEmailChange: any;
+  let confirmRestaurantEmailChange: any;
+  let listFavorites: any;
+  let toggleFavorite: any;
 
   beforeEach(() => {
     listRestaurant = { execute: jest.fn() };
@@ -30,6 +35,11 @@ describe('RestaurantController', () => {
     updateIndividualOrderStatus = { execute: jest.fn() };
     updateCompanyOrderStatus = { execute: jest.fn() };
     getOrderProgress = { execute: jest.fn() };
+    updateRestaurantProfile = { execute: jest.fn() };
+    requestRestaurantEmailChange = { execute: jest.fn() };
+    confirmRestaurantEmailChange = { execute: jest.fn() };
+    listFavorites = { execute: jest.fn() };
+    toggleFavorite = { execute: jest.fn() };
 
     controller = new RestaurantController(
       listRestaurant,
@@ -43,6 +53,11 @@ describe('RestaurantController', () => {
       updateIndividualOrderStatus,
       updateCompanyOrderStatus,
       getOrderProgress,
+      updateRestaurantProfile,
+      requestRestaurantEmailChange,
+      confirmRestaurantEmailChange,
+      listFavorites,
+      toggleFavorite,
     );
   });
 
@@ -183,7 +198,7 @@ describe('RestaurantController', () => {
         '1',
         '2',
         '3',
-        { status: IndividualOrderStatus.COMPLETED } as any,
+        { status: IndividualOrderStatus.COMPLETED },
         res,
       );
       expect(res.status).toHaveBeenCalledWith(200);
@@ -198,7 +213,7 @@ describe('RestaurantController', () => {
         '1',
         '2',
         '3',
-        { status: IndividualOrderStatus.COMPLETED } as any,
+        { status: IndividualOrderStatus.COMPLETED },
         res,
       );
       expect(res.status).toHaveBeenCalledWith(404);
@@ -211,7 +226,7 @@ describe('RestaurantController', () => {
         '1',
         '2',
         '3',
-        { status: IndividualOrderStatus.COMPLETED } as any,
+        { status: IndividualOrderStatus.COMPLETED },
         res,
       );
       expect(res.status).toHaveBeenCalledWith(500);
@@ -225,7 +240,7 @@ describe('RestaurantController', () => {
       await controller.updateCompanyOrderStatus(
         '1',
         '2',
-        { status: CompanyOrderStatus.DELIVERED } as any,
+        { status: CompanyOrderStatus.DELIVERED },
         res,
       );
       expect(res.status).toHaveBeenCalledWith(200);
@@ -239,7 +254,7 @@ describe('RestaurantController', () => {
       await controller.updateCompanyOrderStatus(
         '1',
         '2',
-        { status: CompanyOrderStatus.DELIVERED } as any,
+        { status: CompanyOrderStatus.DELIVERED },
         res,
       );
       expect(res.status).toHaveBeenCalledWith(404);
@@ -251,7 +266,7 @@ describe('RestaurantController', () => {
       await controller.updateCompanyOrderStatus(
         '1',
         '2',
-        { status: CompanyOrderStatus.DELIVERED } as any,
+        { status: CompanyOrderStatus.DELIVERED },
         res,
       );
       expect(res.status).toHaveBeenCalledWith(500);

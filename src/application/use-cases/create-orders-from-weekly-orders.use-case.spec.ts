@@ -1,7 +1,4 @@
-import {
-  BadRequestException,
-  NotFoundException,
-} from '@nestjs/common';
+import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { CreateOrdersFromWeeklyOrdersUseCase } from './create-orders-from-weekly-orders.use-case';
 
 describe('CreateOrdersFromWeeklyOrdersUseCase', () => {
@@ -12,6 +9,8 @@ describe('CreateOrdersFromWeeklyOrdersUseCase', () => {
   let companyOrderRepo: any;
   let orderItemRepo: any;
   let dishRepo: any;
+  let restaurantRepo: any;
+  let validateTriggerTime: any;
   let useCase: CreateOrdersFromWeeklyOrdersUseCase;
 
   beforeEach(() => {
@@ -26,6 +25,8 @@ describe('CreateOrdersFromWeeklyOrdersUseCase', () => {
     companyOrderRepo = { create: jest.fn() };
     orderItemRepo = { findByPk: jest.fn() };
     dishRepo = { getById: jest.fn() };
+    restaurantRepo = { getById: jest.fn().mockResolvedValue(null) };
+    validateTriggerTime = { execute: jest.fn() };
 
     useCase = new CreateOrdersFromWeeklyOrdersUseCase(
       companyRepo,
@@ -35,6 +36,8 @@ describe('CreateOrdersFromWeeklyOrdersUseCase', () => {
       companyOrderRepo,
       orderItemRepo,
       dishRepo,
+      restaurantRepo,
+      validateTriggerTime,
     );
   });
 
@@ -102,6 +105,77 @@ describe('CreateOrdersFromWeeklyOrdersUseCase', () => {
     companyOrderRepo.create.mockResolvedValue({ id: 555 });
 
     const result = await useCase.execute(1);
+    expect(result.ordersCreated).toBe(1);
+  });
+
+  it('US42: valida horário de funcionamento do restaurante antes de criar o pedido da empresa', async () => {
+    companyRepo.getById.mockResolvedValue({ id: 1, restaurantId: 9 });
+    employeeRepo.listByCompany.mockResolvedValue([{ id: 10 }]);
+    weeklyRepo.findByEmployeeAndDay.mockResolvedValue({ orderItemId: 100 });
+    orderItemRepo.findByPk.mockResolvedValue({ dishId: 200 });
+    dishRepo.getById.mockResolvedValue({ id: 200, restaurantId: 9 });
+    individualRepo.create.mockResolvedValue({ id: 999 });
+    companyOrderRepo.create.mockResolvedValue({ id: 555 });
+    restaurantRepo.getById.mockResolvedValue({
+      id: 9,
+      name: 'Casa do Sabor',
+      openingTime: '08:00',
+      closingTime: '18:00',
+    });
+
+    await useCase.execute(1);
+
+    expect(restaurantRepo.getById).toHaveBeenCalledWith(9);
+    expect(validateTriggerTime.execute).toHaveBeenCalledWith(
+      expect.objectContaining({
+        openingTime: '08:00',
+        closingTime: '18:00',
+        restaurantName: 'Casa do Sabor',
+      }),
+    );
+  });
+
+  it('US42: propaga BadRequest quando o disparo cai fora do horário do restaurante', async () => {
+    companyRepo.getById.mockResolvedValue({ id: 1, restaurantId: 9 });
+    employeeRepo.listByCompany.mockResolvedValue([{ id: 10 }]);
+    weeklyRepo.findByEmployeeAndDay.mockResolvedValue({ orderItemId: 100 });
+    orderItemRepo.findByPk.mockResolvedValue({ dishId: 200 });
+    dishRepo.getById.mockResolvedValue({ id: 200, restaurantId: 9 });
+    individualRepo.create.mockResolvedValue({ id: 999 });
+    restaurantRepo.getById.mockResolvedValue({
+      id: 9,
+      name: 'Casa do Sabor',
+      openingTime: '08:00',
+      closingTime: '18:00',
+    });
+    validateTriggerTime.execute.mockImplementation(() => {
+      throw new BadRequestException('fora do horário');
+    });
+
+    await expect(useCase.execute(1)).rejects.toBeInstanceOf(
+      BadRequestException,
+    );
+    expect(companyOrderRepo.create).not.toHaveBeenCalled();
+  });
+
+  it('US42: pula validação quando o restaurante não tem horários cadastrados', async () => {
+    companyRepo.getById.mockResolvedValue({ id: 1, restaurantId: 9 });
+    employeeRepo.listByCompany.mockResolvedValue([{ id: 10 }]);
+    weeklyRepo.findByEmployeeAndDay.mockResolvedValue({ orderItemId: 100 });
+    orderItemRepo.findByPk.mockResolvedValue({ dishId: 200 });
+    dishRepo.getById.mockResolvedValue({ id: 200, restaurantId: 9 });
+    individualRepo.create.mockResolvedValue({ id: 999 });
+    companyOrderRepo.create.mockResolvedValue({ id: 555 });
+    restaurantRepo.getById.mockResolvedValue({
+      id: 9,
+      name: 'Sem Horário',
+      openingTime: null,
+      closingTime: null,
+    });
+
+    const result = await useCase.execute(1);
+
+    expect(validateTriggerTime.execute).not.toHaveBeenCalled();
     expect(result.ordersCreated).toBe(1);
   });
 });

@@ -28,12 +28,18 @@ import { CompanyRepository } from 'src/infrastructure/database/repositories/comp
 import { EmployeeRepository } from 'src/infrastructure/database/repositories/employee.repository';
 import { DishRepository } from 'src/infrastructure/database/repositories/dish.repository';
 import { AuthModule } from './auth.module';
+import { FavoriteModule } from './favorite.module';
 import { UploadOwnershipGuard } from 'src/infrastructure/guards/upload-ownership.guard';
 import { UserRepository } from 'src/infrastructure/database/repositories/user.repository';
 import { UserProfileEligibilityService } from 'src/application/use-cases/user-profile-eligibility.service';
+import { userProvider } from 'src/infrastructure/providers/user.provider';
+import { UpdateRestaurantProfileUseCase } from 'src/application/use-cases/update-restaurant-profile.use-case';
+import { RequestRestaurantEmailChangeUseCase } from 'src/application/use-cases/request-restaurant-email-change.use-case';
+import { ConfirmRestaurantEmailChangeUseCase } from 'src/application/use-cases/confirm-restaurant-email-change.use-case';
+import { EmailService } from 'src/application/services/email.service';
 
 @Module({
-  imports: [DatabaseModule, AuthModule],
+  imports: [DatabaseModule, AuthModule, FavoriteModule],
   controllers: [RestaurantController],
   providers: [
     ...restaurantProvider,
@@ -44,6 +50,8 @@ import { UserProfileEligibilityService } from 'src/application/use-cases/user-pr
     ...companyOrderProvider,
     ...companyProvider,
     ...employeeProvider,
+    ...userProvider,
+    EmailService,
     RestaurantRepository,
     RestaurantRatingRepository,
     CompanyRepository,
@@ -64,6 +72,9 @@ import { UserProfileEligibilityService } from 'src/application/use-cases/user-pr
     UpdateIndividualOrderStatusUseCase,
     UpdateCompanyOrderStatusUseCase,
     GetOrderProgressUseCase,
+    UpdateRestaurantProfileUseCase,
+    RequestRestaurantEmailChangeUseCase,
+    ConfirmRestaurantEmailChangeUseCase,
   ],
   exports: [
     RestaurantRepository,
@@ -80,6 +91,9 @@ import { UserProfileEligibilityService } from 'src/application/use-cases/user-pr
     UpdateIndividualOrderStatusUseCase,
     UpdateCompanyOrderStatusUseCase,
     GetOrderProgressUseCase,
+    UpdateRestaurantProfileUseCase,
+    RequestRestaurantEmailChangeUseCase,
+    ConfirmRestaurantEmailChangeUseCase,
   ],
 })
 export class RestaurantModule {}

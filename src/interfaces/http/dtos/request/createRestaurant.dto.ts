@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { DishInterface } from 'src/domain/models/dish.model';
+import { IsNotEmpty, IsString, IsOptional } from 'class-validator';
 
 export class CreateRestaurantDto {
   @ApiProperty({
@@ -7,6 +7,7 @@ export class CreateRestaurantDto {
     type: Number,
     example: 1,
   })
+  @IsNotEmpty()
   userId: number;
 
   @ApiProperty({
@@ -14,6 +15,8 @@ export class CreateRestaurantDto {
     type: String,
     example: 'Sabores do Chef',
   })
+  @IsNotEmpty()
+  @IsString()
   name: string;
 
   @ApiProperty({
@@ -21,6 +24,8 @@ export class CreateRestaurantDto {
     type: String,
     example: '12.345.678/0001-90',
   })
+  @IsNotEmpty()
+  @IsString()
   cnpj: string;
 
   @ApiProperty({
@@ -28,6 +33,8 @@ export class CreateRestaurantDto {
     type: String,
     example: '12345-678',
   })
+  @IsNotEmpty()
+  @IsString()
   cep: string;
 
   @ApiProperty({
@@ -35,6 +42,8 @@ export class CreateRestaurantDto {
     type: String,
     example: 'Rua das Flores',
   })
+  @IsNotEmpty()
+  @IsString()
   rua: string;
 
   @ApiProperty({
@@ -42,6 +51,8 @@ export class CreateRestaurantDto {
     type: String,
     example: 'São Paulo',
   })
+  @IsNotEmpty()
+  @IsString()
   cidade: string;
 
   @ApiProperty({
@@ -49,6 +60,8 @@ export class CreateRestaurantDto {
     type: String,
     example: 'SP',
   })
+  @IsNotEmpty()
+  @IsString()
   estado: string;
 
   @ApiProperty({
@@ -56,6 +69,8 @@ export class CreateRestaurantDto {
     type: String,
     example: '123',
   })
+  @IsNotEmpty()
+  @IsString()
   number: string;
 
   @ApiProperty({
@@ -64,6 +79,8 @@ export class CreateRestaurantDto {
     example: 'Sala 101',
     required: false,
   })
+  @IsOptional()
+  @IsString()
   complemento?: string;
 
   @ApiProperty({
@@ -73,5 +90,27 @@ export class CreateRestaurantDto {
       'https://www.tripadvisor.com.br/Restaurant_Review-g303235-d12083289-Reviews-Sabores_do_Chef_Picanharia-Manaus_Amazon_River_State_of_Amazonas.html',
     required: false,
   })
+  @IsOptional()
+  @IsString()
   profileImage?: string;
+
+  @ApiProperty({
+    description: 'Horário de abertura (HH:mm)',
+    type: String,
+    example: '08:00',
+    required: false,
+  })
+  @IsOptional()
+  @IsString()
+  openingTime?: string;
+
+  @ApiProperty({
+    description: 'Horário de fechamento (HH:mm)',
+    type: String,
+    example: '18:00',
+    required: false,
+  })
+  @IsOptional()
+  @IsString()
+  closingTime?: string;
 }
